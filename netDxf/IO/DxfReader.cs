@@ -11039,8 +11039,8 @@ namespace netDxf.IO
                         lineweight = (Lineweight) (short) recordEntry.Value;
                         break;
                     case 331:
-                        Linetype linetype = (Linetype) this.doc.GetObjectByHandle((string) recordEntry.Value);
-                        lineTypeName = linetype.Name;
+                        Linetype linetype = this.doc.GetObjectByHandle((string)recordEntry.Value) as Linetype;
+                        lineTypeName = linetype?.Name ?? Linetype.DefaultName;
                         break;
                     case 6:
                         lineTypeName = (string) recordEntry.Value;
