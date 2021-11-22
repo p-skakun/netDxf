@@ -1,23 +1,26 @@
-﻿#region netDxf library licensed under the MIT License, Copyright © 2009-2021 Daniel Carvajal (haplokuon@gmail.com)
+#region netDxf library licensed under the MIT License
 // 
-//                        netDxf library
-// Copyright © 2021 Daniel Carvajal (haplokuon@gmail.com)
+//                       netDxf library
+// Copyright (c) 2019-2021 Daniel Carvajal (haplokuon@gmail.com)
 // 
-// Permission is hereby granted, free of charge, to any person obtaining a copy of this software
-// and associated documentation files (the “Software”), to deal in the Software without restriction,
-// including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense,
-// and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so,
-// subject to the following conditions:
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
 // 
 // The above copyright notice and this permission notice shall be included in all
 // copies or substantial portions of the Software.
 // 
-// THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
-// FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
-// COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
-// IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+// 
 #endregion
 
 using System;
@@ -56,6 +59,11 @@ namespace netDxf.IO
         // here we will store strings already encoded <string: original, string: encoded>
         private Dictionary<string, string> encodedStrings;
 
+        // preprocess polylines
+        private Dictionary<string, List<Vertex>> vertexesPolylines;
+        // preprocess polyface mesh
+        private Dictionary<string, List<Vertex>> vertexesPolyfaceMesh;
+
         #endregion
 
         #region constructors
@@ -80,11 +88,80 @@ namespace netDxf.IO
             }
 
             this.encodedStrings = new Dictionary<string, string>();
+            this.vertexesPolylines = new Dictionary<string, List<Vertex>>();
+            this.vertexesPolyfaceMesh = new Dictionary<string, List<Vertex>>();
 
             // create the default PaperSpace layout in case it does not exist. The ModelSpace layout always exists
             if (this.doc.Layouts.Count == 1)
             {
                 this.doc.Layouts.Add(new Layout("Layout1"));
+            }
+
+            // generate polyline3d vertexes
+            foreach (Polyline polyline in this.doc.Entities.Polylines)
+            {
+                List<Vertex> vertexes = new List<Vertex>();
+
+                // first create the polyline vertexes
+                foreach (Vector3 vertex in polyline.Vertexes)
+                {
+                    Vertex v = new Vertex(vertex)
+                    {
+                        Flags = polyline.SmoothType != PolylineSmoothType.NoSmooth ? VertexTypeFlags.SplineFrameControlPoint | VertexTypeFlags.Polyline3dVertex : VertexTypeFlags.Polyline3dVertex
+                    };
+                    this.doc.NumHandles = v.AssignHandle(this.doc.NumHandles);
+                    vertexes.Add(v);
+                }
+
+                // if the polyline is smooth then create the additional vertexes
+                if (polyline.SmoothType != PolylineSmoothType.NoSmooth)
+                {
+                    short splineSegs = this.doc.DrawingVariables.SplineSegs;
+                    int precision = polyline.IsClosed ? splineSegs * polyline.Vertexes.Count : splineSegs * (polyline.Vertexes.Count - 1);
+                    List<Vector3> points = polyline.PolygonalVertexes(precision);
+                    foreach (Vector3 p in points)
+                    {
+                        Vertex v = new Vertex(p)
+                        {
+                            Flags = VertexTypeFlags.SplineVertexFromSplineFitting | VertexTypeFlags.Polyline3dVertex
+                        };
+                        this.doc.NumHandles = v.AssignHandle(this.doc.NumHandles);
+                        vertexes.Add(v);
+                    }
+                }
+                this.vertexesPolylines.Add(polyline.Handle, vertexes);
+            }
+
+            // generate polyface mesh vertexes
+            foreach (PolyfaceMesh pMesh in this.doc.Entities.PolyfaceMeshes)
+            {
+                List<Vertex> vertexes = new List<Vertex>();
+
+                // first create the polyface mesh vertexes
+                foreach (Vector3 vertex in pMesh.Vertexes)
+                {
+                    Vertex v = new Vertex(vertex)
+                    {
+                        Flags = VertexTypeFlags.PolyfaceMeshVertex | VertexTypeFlags.Polygon3dMesh
+                    };
+                    this.doc.NumHandles = v.AssignHandle(this.doc.NumHandles);
+                    vertexes.Add(v);
+                }
+
+                // second create the polyface mesh faces
+                foreach (PolyfaceMeshFace face in pMesh.Faces)
+                {
+                    Vertex v = new Vertex
+                    {
+                        Layer = face.Layer,
+                        Color = face.Color,
+                        VertexIndexes = face.VertexIndexes,
+                        Flags = VertexTypeFlags.PolyfaceMeshVertex
+                    };
+                    this.doc.NumHandles = v.AssignHandle(this.doc.NumHandles);
+                    vertexes.Add(v);
+                }
+                this.vertexesPolyfaceMesh.Add(pMesh.Handle, vertexes);
             }
 
             // create the application registry AcCmTransparency in case it doesn't exists, it is required by the layer transparency
@@ -353,6 +430,7 @@ namespace netDxf.IO
 
             //ENTITIES SECTION
             this.BeginSection(DxfObjectCode.EntitiesSection);
+
             foreach (Layout layout in this.doc.Layouts)
             {
                 if (layout.IsPaperSpace)
@@ -791,7 +869,10 @@ namespace netDxf.IO
             this.chunk.Write(9, "$DIMAPOST");
 
             string dimapost = style.AlternateUnits.Suffix;
-            if (!string.IsNullOrEmpty(style.AlternateUnits.Prefix)) dimapost = style.AlternateUnits.Prefix + "<>" + dimapost;
+            if (!string.IsNullOrEmpty(style.AlternateUnits.Prefix))
+            {
+                dimapost = style.AlternateUnits.Prefix + "<>" + dimapost;
+            }
             this.chunk.Write(1, this.EncodeNonAsciiCharacters(dimapost));
 
             this.chunk.Write(9, "$DIMATFIT");
@@ -805,15 +886,25 @@ namespace netDxf.IO
 
             short angSupress;
             if (style.SuppressAngularLeadingZeros && style.SuppressAngularTrailingZeros)
+            {
                 angSupress = 3;
+            }
             else if (!style.SuppressAngularLeadingZeros && !style.SuppressAngularTrailingZeros)
+            {
                 angSupress = 0;
+            }
             else if (!style.SuppressAngularLeadingZeros && style.SuppressAngularTrailingZeros)
+            {
                 angSupress = 2;
+            }
             else if (style.SuppressAngularLeadingZeros && !style.SuppressAngularTrailingZeros)
+            {
                 angSupress = 1;
+            }
             else
+            {
                 angSupress = 3;
+            }
 
             this.chunk.Write(9, "$DIMAZIN");
             this.chunk.Write(70, angSupress);
@@ -2109,16 +2200,17 @@ namespace netDxf.IO
                     this.chunk.Write(14, x);
                     this.chunk.Write(24, y);
                 }
-                this.chunk.Write(14, (wipeout.ClippingBoundary.Vertexes[0].X - ocsInsPoint.X)/max - 0.5);
-                this.chunk.Write(24, -((wipeout.ClippingBoundary.Vertexes[0].Y - ocsInsPoint.Y)/max - 0.5));
+
+                this.chunk.Write(14, (wipeout.ClippingBoundary.Vertexes[0].X - ocsInsPoint.X) / max - 0.5);
+                this.chunk.Write(24, -((wipeout.ClippingBoundary.Vertexes[0].Y - ocsInsPoint.Y) / max - 0.5));
             }
             else
             {
                 this.chunk.Write(91, wipeout.ClippingBoundary.Vertexes.Count);
                 foreach (Vector2 vertex in wipeout.ClippingBoundary.Vertexes)
                 {
-                    double x = (vertex.X - ocsInsPoint.X)/max - 0.5;
-                    double y = -((vertex.Y - ocsInsPoint.Y)/max - 0.5);
+                    double x = (vertex.X - ocsInsPoint.X) / max - 0.5;
+                    double y = -((vertex.Y - ocsInsPoint.Y) / max - 0.5);
                     this.chunk.Write(14, x);
                     this.chunk.Write(24, y);
                 }
@@ -2181,7 +2273,7 @@ namespace netDxf.IO
             this.chunk.Write(220, tolerance.Normal.Y);
             this.chunk.Write(230, tolerance.Normal.Z);
 
-            double angle = tolerance.Rotation*MathHelper.DegToRad;
+            double angle = tolerance.Rotation * MathHelper.DegToRad;
             Vector3 xAxis = new Vector3(Math.Cos(angle), Math.Sin(angle), 0.0);
             xAxis = MathHelper.Transform(xAxis, tolerance.Normal, CoordinateSystem.Object, CoordinateSystem.World);
 
@@ -2284,8 +2376,6 @@ namespace netDxf.IO
             this.chunk.Write(210, leader.Normal.X);
             this.chunk.Write(220, leader.Normal.Y);
             this.chunk.Write(230, leader.Normal.Z);
-
-            Vector3 dir = ocsVertexes[ocsVertexes.Count - 1] - ocsVertexes[ocsVertexes.Count - 2];
 
             Vector3 xDir = MathHelper.Transform(leader.Direction, leader.Normal, 0.0);
             xDir.Normalize();
@@ -2395,9 +2485,9 @@ namespace netDxf.IO
 
             this.chunk.Write(39, arc.Thickness);
 
-            // this is just an example of the weird Autodesk DXF way of doing things, while an ellipse the center is given in world coordinates,
+            // this is just an example of the weird Autodesk DXF way of doing things, while an ellipse center is given in world coordinates,
             // the center of an arc is given in object coordinates (different rules for the same concept).
-            // It is a lot more intuitive to give the center in world coordinates and then define the orientation with the normal..
+            // It is a lot more intuitive to give the center in world coordinates and then define the orientation with the normal.
             Vector3 ocsCenter = MathHelper.Transform(arc.Center, arc.Normal, CoordinateSystem.World, CoordinateSystem.Object);
 
             this.chunk.Write(10, ocsCenter.X);
@@ -2421,7 +2511,7 @@ namespace netDxf.IO
         {
             this.chunk.Write(100, SubclassMarker.Circle);
 
-            // this is just an example of the stupid autodesk DXF way of doing things, while an ellipse the center is given in world coordinates,
+            // this is just an example of the stupid autodesk DXF way of doing things, while an ellipse center is given in world coordinates,
             // the center of a circle is given in object coordinates (different rules for the same concept).
             // It is a lot more intuitive to give the center in world coordinates and then define the orientation with the normal..
             Vector3 ocsCenter = MathHelper.Transform(circle.Center, circle.Normal, CoordinateSystem.World, CoordinateSystem.Object);
@@ -2580,24 +2670,18 @@ namespace netDxf.IO
         {
             this.chunk.Write(100, SubclassMarker.Spline);
 
-            short flags = (short) spline.Flags;
-
-            if (spline.CreationMethod == SplineCreationMethod.FitPoints)
-            {
-                flags += (short) SplineTypeFlags.FitPointCreationMethod;
-                flags += (short) spline.KnotParameterization;
-            }
-
-            if (spline.IsPeriodic)
-            {
-                flags += (short) SplineTypeFlags.ClosedPeriodicSpline;
-            }
+            short flags = (short) SplineTypeFlags.Rational;
+            if (spline.IsClosed) flags += (short) SplineTypeFlags.Closed;
+            if (spline.IsClosedPeriodic) flags += (short) SplineTypeFlags.ClosedPeriodicSpline;
+            
+            flags += (short) spline.CreationMethod;
+            flags += (short) spline.KnotParameterization;
 
             this.chunk.Write(70, flags);
             this.chunk.Write(71, spline.Degree);
 
             // the next three codes are purely cosmetic and writing them causes more bad than good.
-            // internally AutoCad allows for an INT number of knots, control points, and fit points;
+            // internally AutoCad allows for an integer number of knots, control points, and fit points;
             // but for some weird decision they decided to define them in the DXF with codes 72, 73, and 74 (16-bit integer value), a short.
             // I guess this is the result of legacy code, nevertheless AutoCad do not use those values when importing Spline entities
             //this.chunk.Write(72, (short)spline.Knots.Length);
@@ -2629,10 +2713,10 @@ namespace netDxf.IO
 
             foreach (SplineVertex point in spline.ControlPoints)
             {
-                this.chunk.Write(41, point.Weight);
                 this.chunk.Write(10, point.Position.X);
                 this.chunk.Write(20, point.Position.Y);
                 this.chunk.Write(30, point.Position.Z);
+                this.chunk.Write(41, point.Weight);
             }
 
             foreach (Vector3 point in spline.FitPoints)
@@ -2658,7 +2742,7 @@ namespace netDxf.IO
             this.chunk.Write(20, ocsInsertion.Y);
             this.chunk.Write(30, ocsInsertion.Z);
 
-            // we need to apply the scaling factor between the block and the document or the block that owns it in case of nested blocks
+            // we need to apply the scaling factor between the block and the document, or the block that owns it in case of nested blocks
             double scale = UnitHelper.ConversionFactor(insert.Block.Record.Units, insert.Owner.Record.IsForInternalUseOnly ? this.doc.DrawingVariables.InsUnits : insert.Owner.Record.Units);
 
             this.chunk.Write(41, insert.Scale.X*scale);
@@ -2776,7 +2860,7 @@ namespace netDxf.IO
         {
             this.chunk.Write(100, SubclassMarker.Polyline3d);
 
-            //dummy point
+            //dummy point, use unknown
             this.chunk.Write(10, 0.0);
             this.chunk.Write(20, 0.0);
             this.chunk.Write(30, 0.0);
@@ -2792,7 +2876,10 @@ namespace netDxf.IO
 
             string layerName = this.EncodeNonAsciiCharacters(polyline.Layer.Name);
 
-            foreach (PolylineVertex v in polyline.Vertexes)
+            List<Vertex> vertexes = this.vertexesPolylines[polyline.Handle];
+
+            // More DXF weirdness, why polyline vertexes are considered as an entity? Legacy code?
+            foreach (Vertex v in vertexes)
             {
                 this.chunk.Write(0, v.CodeName);
                 this.chunk.Write(5, v.Handle);
@@ -2814,6 +2901,7 @@ namespace netDxf.IO
                 this.chunk.Write(70, (short) v.Flags);
             }
 
+            // More DXF weirdness, why polyline end sequence are considered as an entity, or why it even exists? Legacy code?
             this.chunk.Write(0, polyline.EndSequence.CodeName);
             this.chunk.Write(5, polyline.EndSequence.Handle);
             this.chunk.Write(100, SubclassMarker.Entity);
@@ -2825,7 +2913,7 @@ namespace netDxf.IO
             this.chunk.Write(100, SubclassMarker.PolyfaceMesh);
             this.chunk.Write(70, (short) mesh.Flags);
 
-            this.chunk.Write(71, (short) mesh.Vertexes.Count);
+            this.chunk.Write(71, (short) mesh.Vertexes.Length);
             this.chunk.Write(72, (short) mesh.Faces.Count);
 
             //dummy point
@@ -2844,54 +2932,55 @@ namespace netDxf.IO
 
             string layerName = this.EncodeNonAsciiCharacters(mesh.Layer.Name);
 
-            foreach (PolyfaceMeshVertex v in mesh.Vertexes)
+            List<Vertex> vertexes = this.vertexesPolyfaceMesh[mesh.Handle];
+
+            foreach (Vertex v in vertexes)
             {
                 this.chunk.Write(0, v.CodeName);
                 this.chunk.Write(5, v.Handle);
                 this.chunk.Write(100, SubclassMarker.Entity);
 
-                this.chunk.Write(8, layerName); // the polyface mesh vertex layer should be the same as the polyface mesh layer
-
-                this.chunk.Write(62, mesh.Color.Index); // the polyface mesh vertex color should be the same as the polyface mesh color
-                if (mesh.Color.UseTrueColor)
+                if (v.VertexIndexes == null)
                 {
-                    this.chunk.Write(420, AciColor.ToTrueColor(mesh.Color));
+                    this.chunk.Write(8, layerName);
+
+                    this.chunk.Write(62, mesh.Color.Index);
+                    if (mesh.Color.UseTrueColor)
+                    {
+                        this.chunk.Write(420, AciColor.ToTrueColor(mesh.Color));
+                    }
+                    this.chunk.Write(100, SubclassMarker.Vertex);
+                    this.chunk.Write(100, SubclassMarker.PolyfaceMeshVertex);
                 }
-                this.chunk.Write(100, SubclassMarker.Vertex);
-                this.chunk.Write(100, SubclassMarker.PolyfaceMeshVertex);
+                else
+                {
+                    // each face in a polyface mesh can have its own layer
+                    if (v.Layer != null)
+                    {
+                        this.chunk.Write(8, this.EncodeNonAsciiCharacters(v.Layer.Name));
+                    }
+
+                    // each face in a polyface mesh can have its own color
+                    if (v.Color != null)
+                    {
+                        this.chunk.Write(62, v.Color.Index);
+                        if (v.Color.UseTrueColor)
+                        {
+                            this.chunk.Write(420, AciColor.ToTrueColor(v.Color));
+                        }
+                    }
+
+                    this.chunk.Write(100, SubclassMarker.PolyfaceMeshFace);
+                    short code = 71;
+                    foreach (short index in v.VertexIndexes)
+                    {
+                        this.chunk.Write(code++, index);
+                    }
+                }
                 this.chunk.Write(70, (short) v.Flags);
                 this.chunk.Write(10, v.Position.X);
                 this.chunk.Write(20, v.Position.Y);
                 this.chunk.Write(30, v.Position.Z);
-            }
-
-            foreach (PolyfaceMeshFace face in mesh.Faces)
-            {
-                this.chunk.Write(0, face.CodeName);
-                this.chunk.Write(5, face.Handle);
-                this.chunk.Write(100, SubclassMarker.Entity);
-
-                this.chunk.Write(8, layerName); // the polyface mesh face layer should be the same as the polyface mesh layer
-                this.chunk.Write(62, mesh.Color.Index); // the polyface mesh face color should be the same as the polyface mesh color
-                if (mesh.Color.UseTrueColor)
-                {
-                    this.chunk.Write(420, AciColor.ToTrueColor(mesh.Color));
-                }
-                this.chunk.Write(100, SubclassMarker.PolyfaceMeshFace);
-                this.chunk.Write(70, (short) VertexTypeFlags.PolyfaceMeshVertex);
-                this.chunk.Write(10, 0.0);
-                this.chunk.Write(20, 0.0);
-                this.chunk.Write(30, 0.0);
-
-                if (face.VertexIndexes.Count > 4)
-                {
-                    throw new ArgumentException("The number of vertexes of a PolyfaceMeshFace cannot be larger than 4.");
-                }
-                short code = 71;
-                foreach (short index in face.VertexIndexes)
-                {
-                    this.chunk.Write(code++, index);
-                }
             }
 
             this.chunk.Write(0, mesh.EndSequence.CodeName);
@@ -2914,7 +3003,7 @@ namespace netDxf.IO
             this.chunk.Write(220, point.Normal.Y);
             this.chunk.Write(230, point.Normal.Z);
 
-            // for unknown reasons the DXF likes the point rotation inverted
+            // for unknown reasons the DXF likes the point rotation inverted, NONSENSE
             this.chunk.Write(50, 360.0 - point.Rotation);
 
             this.WriteXData(point.XData);
@@ -2926,7 +3015,7 @@ namespace netDxf.IO
 
             this.chunk.Write(1, this.EncodeNonAsciiCharacters(text.Value));
 
-            // another example of this OCS vs WCS non sense.
+            // another example of this OCS vs WCS nonsense.
             // while the MText position is written in WCS the position of the Text is written in OCS (different rules for the same concept).
             Vector3 ocsBasePoint = MathHelper.Transform(text.Position, text.Normal, CoordinateSystem.World, CoordinateSystem.Object);
 
@@ -2964,8 +3053,16 @@ namespace netDxf.IO
             this.chunk.Write(230, text.Normal.Z);
 
             short textGeneration = 0;
-            if (text.IsBackward) textGeneration += 2;
-            if (text.IsUpsideDown) textGeneration += 4;
+            if (text.IsBackward)
+            {
+                textGeneration += 2;
+            }
+
+            if (text.IsUpsideDown)
+            {
+                textGeneration += 4;
+            }
+
             this.chunk.Write(71, textGeneration);
 
             switch (text.Alignment)
@@ -3072,6 +3169,7 @@ namespace netDxf.IO
             //this.chunk.Write(50, mText.Rotation);
 
             //the other option for the rotation is to store the horizontal vector of the text
+            //this is what happens when duplicate information is stored, always ends in trouble
             //it will be used just in case other programs read the rotation as radians, QCAD seems to do that.
             Vector2 direction = Vector2.Rotate(Vector2.UnitX, mText.Rotation * MathHelper.DegToRad);
             direction.Normalize();
@@ -3274,12 +3372,12 @@ namespace netDxf.IO
                 HatchBoundaryPath.Spline spline = (HatchBoundaryPath.Spline) entity;
 
                 // another DXF inconsistency!; while the Spline entity degree is written as a short (code 71)
-                // the degree of a hatch boundary path spline is written as an int (code 94)
+                // the degree of a hatch boundary path spline is written as an integer (code 94)
                 this.chunk.Write(94, (int) spline.Degree);
                 this.chunk.Write(73, spline.IsRational ? (short) 1 : (short) 0);
                 this.chunk.Write(74, spline.IsPeriodic ? (short) 1 : (short) 0);
 
-                // now the number of knots and control points of a spline are written as an int, as it should be.
+                // now the number of knots and control points of a spline are written as an integer, as it should be.
                 // but in the Spline entities they are defined as shorts. Guess what, while you can avoid writing these two codes for the Spline entity, now they are required.
                 this.chunk.Write(95, spline.Knots.Length);
                 this.chunk.Write(96, spline.ControlPoints.Length);
@@ -3402,8 +3500,6 @@ namespace netDxf.IO
                 this.chunk.Write(2, this.EncodeNonAsciiCharacters(dim.Block.Name));
             }
 
-            //Vector3 ocsDef = new Vector3(dim.DefinitionPoint.X, dim.DefinitionPoint.Y, dim.Elevation);
-            //Vector3 wcsDef = MathHelper.Transform(ocsDef, dim.Normal, CoordinateSystem.Object, CoordinateSystem.World);
             Vector3 wcsDef = MathHelper.Transform(dim.DefinitionPoint, dim.Normal, dim.Elevation);
             this.chunk.Write(10, wcsDef.X);
             this.chunk.Write(20, wcsDef.Y);
@@ -3832,11 +3928,11 @@ namespace netDxf.IO
                         xdataEntry.XDataRecord.Add(new XDataRecord(XDataCode.Int16, dimlin));
                         break;
                     case DimensionStyleOverrideType.TolerancesLowerLimit:
-                        xdataEntry.XDataRecord.Add(new XDataRecord(XDataCode.Int16, (short) 47));
+                        xdataEntry.XDataRecord.Add(new XDataRecord(XDataCode.Int16, (short) 48));
                         xdataEntry.XDataRecord.Add(new XDataRecord(XDataCode.Real, (double) styleOverride.Value));
                         break;
                     case DimensionStyleOverrideType.TolerancesUpperLimit:
-                        xdataEntry.XDataRecord.Add(new XDataRecord(XDataCode.Int16, (short) 48));
+                        xdataEntry.XDataRecord.Add(new XDataRecord(XDataCode.Int16, (short) 47));
                         xdataEntry.XDataRecord.Add(new XDataRecord(XDataCode.Real, (double) styleOverride.Value));
                         break;
                     case DimensionStyleOverrideType.TolerancesVerticalPlacement:
@@ -4140,13 +4236,6 @@ namespace netDxf.IO
 
             Vector2 u = image.Uvector * (image.Width / image.Definition.Width);
             Vector2 v = image.Vvector * (image.Height / image.Definition.Height);
-
-            //Vector3 ocsU = new Vector3(u.X, u.Y, 0.0);
-            //Vector3 ocsV = new Vector3(v.X, v.Y, 0.0);
-            //List<Vector3> wcsUV = MathHelper.Transform(new List<Vector3> { ocsU, ocsV },
-            //    image.Normal,
-            //    CoordinateSystem.Object,
-            //    CoordinateSystem.World);
             List<Vector3> wcsUV = MathHelper.Transform(new[] {u, v}, image.Normal, 0.0);
 
             double factor = UnitHelper.ConversionFactor(this.doc.RasterVariables.Units, this.doc.DrawingVariables.InsUnits);
