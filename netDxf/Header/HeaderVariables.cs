@@ -1,23 +1,26 @@
-﻿#region netDxf library licensed under the MIT License, Copyright © 2009-2021 Daniel Carvajal (haplokuon@gmail.com)
+#region netDxf library licensed under the MIT License
 // 
-//                        netDxf library
-// Copyright © 2021 Daniel Carvajal (haplokuon@gmail.com)
+//                       netDxf library
+// Copyright (c) 2019-2021 Daniel Carvajal (haplokuon@gmail.com)
 // 
-// Permission is hereby granted, free of charge, to any person obtaining a copy of this software
-// and associated documentation files (the “Software”), to deal in the Software without restriction,
-// including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense,
-// and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so,
-// subject to the following conditions:
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
 // 
 // The above copyright notice and this permission notice shall be included in all
 // copies or substantial portions of the Software.
 // 
-// THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
-// FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
-// COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
-// IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+// 
 #endregion
 
 using System;
@@ -82,6 +85,7 @@ namespace netDxf.Header
                 {HeaderVariableCode.PdSize, new HeaderVariable(HeaderVariableCode.PdSize, 40, 0.0)},
                 {HeaderVariableCode.PLineGen, new HeaderVariable(HeaderVariableCode.PLineGen, 70, (short) 0)},
                 {HeaderVariableCode.PsLtScale, new HeaderVariable(HeaderVariableCode.PsLtScale, 70, (short) 1)},
+                {HeaderVariableCode.SplineSegs, new HeaderVariable(HeaderVariableCode.SplineSegs, 70, (short) 8)},
                 {HeaderVariableCode.TdCreate, new HeaderVariable(HeaderVariableCode.TdCreate, 40, DateTime.Now)},
                 {HeaderVariableCode.TduCreate, new HeaderVariable(HeaderVariableCode.TduCreate, 40, DateTime.UtcNow)},
                 {HeaderVariableCode.TdUpdate, new HeaderVariable(HeaderVariableCode.TdUpdate, 40, DateTime.Now)},
@@ -110,7 +114,9 @@ namespace netDxf.Header
             set
             {
                 if (value < DxfVersion.AutoCad2000)
-                        throw new NotSupportedException("Only AutoCad2000 and newer DXF versions are supported.");
+                {
+                    throw new NotSupportedException("Only AutoCad2000 and newer DXF versions are supported.");
+                }
                 this.variables[HeaderVariableCode.AcadVer].Value = value;
             }
         }
@@ -174,7 +180,9 @@ namespace netDxf.Header
             set
             {
                 if (value < 0 || value > 8)
+                {
                     throw new ArgumentOutOfRangeException(nameof(value), "Valid values are integers from 0 to 8.");
+                }
                 this.variables[HeaderVariableCode.AUprec].Value = value;
             }
         }
@@ -189,7 +197,9 @@ namespace netDxf.Header
             set
             {
                 if (value == null)
+                {
                     throw new ArgumentNullException(nameof(value));
+                }
                 this.variables[HeaderVariableCode.CeColor].Value = value;
             }
         }
@@ -204,7 +214,9 @@ namespace netDxf.Header
             set
             {
                 if (value <= 0)
+                {
                     throw new ArgumentOutOfRangeException(nameof(value), value, "The current entity line type scale must be greater than zero.");
+                }
                 this.variables[HeaderVariableCode.CeLtScale].Value = value;
             }
         }
@@ -229,7 +241,9 @@ namespace netDxf.Header
             set
             {
                 if (string.IsNullOrEmpty(value))
+                {
                     throw new ArgumentNullException(nameof(value), "The current entity line type name should be at least one character long.");
+                }
                 this.variables[HeaderVariableCode.CeLtype].Value = value;
             }
         }
@@ -244,7 +258,9 @@ namespace netDxf.Header
             set
             {
                 if (string.IsNullOrEmpty(value))
+                {
                     throw new ArgumentNullException(nameof(value), "The current layer name should be at least one character long.");
+                }
                 this.variables[HeaderVariableCode.CLayer].Value = value;
             }
         }
@@ -279,7 +295,9 @@ namespace netDxf.Header
             set
             {
                 if (string.IsNullOrEmpty(value))
+                {
                     throw new ArgumentNullException(nameof(value), "The current multiline style name should be at least one character long.");
+                }
                 this.variables[HeaderVariableCode.CMLStyle].Value = value;
             }
         }
@@ -294,7 +312,9 @@ namespace netDxf.Header
             set
             {
                 if (string.IsNullOrEmpty(value))
+                {
                     throw new ArgumentNullException(nameof(value), "The current dimension style name should be at least one character long.");
+                }
                 this.variables[HeaderVariableCode.DimStyle].Value = value;
             }
         }
@@ -309,7 +329,9 @@ namespace netDxf.Header
             set
             {
                 if (value <= 0)
+                {
                     throw new ArgumentOutOfRangeException(nameof(value), value, "The default text height must be greater than zero.");
+                }
                 this.variables[HeaderVariableCode.TextSize].Value = value;
             }
         }
@@ -324,7 +346,9 @@ namespace netDxf.Header
             set
             {
                 if (string.IsNullOrEmpty(value))
+                {
                     throw new ArgumentNullException(nameof(value), "The current text style name should be at least one character long.");
+                }
                 this.variables[HeaderVariableCode.TextStyle].Value = value;
             }
         }
@@ -342,7 +366,9 @@ namespace netDxf.Header
             set
             {
                 if (value == LinearUnitType.Architectural || value == LinearUnitType.Engineering)
+                {
                     this.InsUnits = DrawingUnits.Inches;
+                }
                 this.variables[HeaderVariableCode.LUnits].Value = value;
             }
         }
@@ -357,7 +383,9 @@ namespace netDxf.Header
             set
             {
                 if (value < 0 || value > 8)
+                {
                     throw new ArgumentOutOfRangeException(nameof(value), "Valid values are integers from 0 to 8.");
+                }
                 this.variables[HeaderVariableCode.LUprec].Value = value;
             }
         }
@@ -439,7 +467,9 @@ namespace netDxf.Header
             set
             {
                 if (value <= 0)
+                {
                     throw new ArgumentOutOfRangeException(nameof(value), value, "The global line type scale must be greater than zero.");
+                }
                 this.variables[HeaderVariableCode.LtScale].Value = value;
             }
         }
@@ -506,7 +536,9 @@ namespace netDxf.Header
             set
             {
                 if (value != 0 && value != 1)
+                {
                     throw new ArgumentOutOfRangeException(nameof(value), value, "Accepted values are 0 or 1.");
+                }
                 this.variables[HeaderVariableCode.PLineGen].Value = value;
             }
         }
@@ -525,9 +557,20 @@ namespace netDxf.Header
             set
             {
                 if (value != 0 && value != 1)
+                {
                     throw new ArgumentOutOfRangeException(nameof(value), value, "Accepted values are 0 or 1.");
+                }
                 this.variables[HeaderVariableCode.PsLtScale].Value = value;
             }
+        }
+
+        /// <summary>
+        /// Defines number of line segments to be generated for smoothed polylines.
+        /// </summary>
+        public short SplineSegs
+        {
+            get { return (short) this.variables[HeaderVariableCode.SplineSegs].Value; }
+            set { this.variables[HeaderVariableCode.SplineSegs].Value = value; }
         }
 
         /// <summary>
@@ -660,14 +703,20 @@ namespace netDxf.Header
         /// </remarks>
         public void AddCustomVariable(HeaderVariable variable)
         {
-            if(variable == null)
+            if (variable == null)
+            {
                 throw new ArgumentNullException(nameof(variable), "A custom header variable cannot be null.");
+            }
 
-            if(!variable.Name.StartsWith("$"))
+            if (!variable.Name.StartsWith("$"))
+            {
                 throw new ArgumentException("A header variable name must start with '$'.", nameof(variable));
+            }
 
-            if(this.variables.ContainsKey(variable.Name))
+            if (this.variables.ContainsKey(variable.Name))
+            {
                 throw new ArgumentException("A known header variable with the same name already exists.", nameof(variable));
+            }
 
             this.customVariables.Add(variable.Name, variable);
         }
