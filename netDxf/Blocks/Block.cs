@@ -1,7 +1,7 @@
 #region netDxf library licensed under the MIT License
 // 
 //                       netDxf library
-// Copyright (c) 2019-2021 Daniel Carvajal (haplokuon@gmail.com)
+// Copyright (c) Daniel Carvajal (haplokuon@gmail.com)
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -359,12 +359,21 @@ namespace netDxf.Blocks
         }
 
         /// <summary>
+        /// Gets the owner of the actual DXF object.
+        /// </summary>
+        public new BlockRecord Owner
+        {
+            get { return (BlockRecord) base.Owner; }
+            internal set { base.Owner = value; }
+        }
+
+        /// <summary>
         /// Gets the block record associated with this block.
         /// </summary>
         /// <remarks>It returns the same object as the owner property.</remarks>
         public BlockRecord Record
         {
-            get { return (BlockRecord) this.Owner; }
+            get { return this.Owner; }
         }
 
         /// <summary>
@@ -588,6 +597,41 @@ namespace netDxf.Blocks
         #endregion
 
         #region overrides
+
+        /// <summary>
+        /// Checks if this instance has been referenced by other DxfObjects. 
+        /// </summary>
+        /// <returns>
+        /// Returns true if this instance has been referenced by other DxfObjects, false otherwise.
+        /// It will always return false if this instance does not belong to a document.
+        /// </returns>
+        /// <remarks>
+        /// This method returns the same value as the HasReferences method that can be found in the TableObjects class.
+        /// </remarks>
+        public override bool HasReferences()
+        {
+            return this.Owner.Owner != null && this.Owner.Owner.HasReferences(this.Name);
+        }
+
+        /// <summary>
+        /// Gets the list of DxfObjects referenced by this instance.
+        /// </summary>
+        /// <returns>
+        /// A list of DxfObjectReference that contains the DxfObject referenced by this instance and the number of times it does.
+        /// It will return null if this instance does not belong to a document.
+        /// </returns>
+        /// <remarks>
+        /// This method returns the same list as the GetReferences method that can be found in the TableObjects class.
+        /// </remarks>
+        public override List<DxfObjectReference> GetReferences()
+        {
+            if (this.Owner.Owner == null)
+            {
+                return null;
+            }
+
+            return this.Owner.Owner.GetReferences(this.Name);
+        }
 
         private static TableObject Clone(Block block, string newName, bool checkName)
         {

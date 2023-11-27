@@ -1,7 +1,7 @@
 #region netDxf library licensed under the MIT License
 // 
 //                       netDxf library
-// Copyright (c) 2019-2021 Daniel Carvajal (haplokuon@gmail.com)
+// Copyright (c) Daniel Carvajal (haplokuon@gmail.com)
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -39,6 +39,7 @@ namespace netDxf.Collections
         #region private fields
 
         private readonly List<string> folders;
+        private string workingFolder;
 
         #endregion
 
@@ -50,15 +51,7 @@ namespace netDxf.Collections
         public SupportFolders()
         {
             this.folders = new List<string>();
-        }
-
-        /// <summary>
-        /// Initializes a new instance of <c>SupportFolders</c> class.
-        /// </summary>
-        /// <param name="capacity">Initial capacity of the list.</param>
-        public SupportFolders(int capacity)
-        {
-            this.folders = new List<string>(capacity);
+            this.workingFolder = Environment.CurrentDirectory;
         }
 
         /// <summary>
@@ -68,9 +61,25 @@ namespace netDxf.Collections
         public SupportFolders(IEnumerable<string> folders)
         {
             if (folders == null)
+            {
                 throw new ArgumentNullException(nameof(folders));
-            this.folders = new List<string>();
-            this.AddRange(folders);
+            }
+            this.folders = new List<string>(folders);
+            this.workingFolder = Environment.CurrentDirectory;
+        }
+
+        #endregion
+
+        #region public properties
+
+        /// <summary>
+        /// Gets or sets the base folder to resolver relative paths of external references.
+        /// </summary>
+        /// <remarks>By default it points to the current System.Environment.CurrentDirectory when the DxfDocument was created.</remarks>
+        public string WorkingFolder
+        {
+            get { return this.workingFolder; }
+            set { this.workingFolder = value; }
         }
 
         #endregion
@@ -85,21 +94,29 @@ namespace netDxf.Collections
         /// <remarks>If the specified file already exists it return the same value, if neither it cannot be found in any of the support folders it will return an empty string.</remarks>
         public string FindFile(string file)
         {
+            string foundFile = string.Empty;
+
+            string currentDirectory = Environment.CurrentDirectory;
+            Environment.CurrentDirectory = this.workingFolder;
+
             if (File.Exists(file))
             {
-                return file;
+                foundFile = Path.GetFullPath(file);
             }
+            
             string name = Path.GetFileName(file);
+
             foreach (string folder in this.folders)
             {
                 string newFile = string.Format("{0}{1}{2}", folder, Path.DirectorySeparatorChar, name);
                 if (File.Exists(newFile))
                 {
-                    return newFile;
+                    foundFile = Path.GetFullPath(newFile);
                 }
             }
 
-            return string.Empty;
+            Environment.CurrentDirectory = currentDirectory;
+            return foundFile;
         }
 
         #endregion
@@ -119,7 +136,9 @@ namespace netDxf.Collections
             set
             {
                 if (string.IsNullOrEmpty(value))
+                {
                     throw new ArgumentNullException(nameof(value));
+                }
                 this.folders[index] = value;
             }
         }
@@ -166,8 +185,10 @@ namespace netDxf.Collections
         /// <param name="item">Folder path to add to the list. The item cannot be null.</param>
         public void Add(string item)
         {
-            if(string.IsNullOrEmpty(item))
+            if (string.IsNullOrEmpty(item))
+            {
                 throw new ArgumentNullException(nameof(item));
+            }
             this.folders.Add(item);
         }
 
@@ -178,7 +199,9 @@ namespace netDxf.Collections
         public void AddRange(IEnumerable<string> collection)
         {
             if (collection == null)
+            {
                 throw new ArgumentNullException(nameof(collection));
+            }
             foreach (string s in collection)
             {
                 this.folders.Add(s);
@@ -201,7 +224,9 @@ namespace netDxf.Collections
         public bool Contains(string item)
         {
             if (string.IsNullOrEmpty(item))
+            {
                 throw new ArgumentNullException(nameof(item));
+            }
             return this.folders.Contains(item);
         }
 
@@ -223,7 +248,9 @@ namespace netDxf.Collections
         public bool Remove(string item)
         {
             if (string.IsNullOrEmpty(item))
+            {
                 throw new ArgumentNullException(nameof(item));
+            }
             return this.folders.Remove(item);
         }
 
@@ -244,6 +271,10 @@ namespace netDxf.Collections
         /// <param name="item">The object to insert into the list.</param>
         public void Insert(int index, string item)
         {
+            if (string.IsNullOrEmpty(item))
+            {
+                throw new ArgumentNullException(nameof(item));
+            }
             this.folders.Insert(index, item);
         }
 

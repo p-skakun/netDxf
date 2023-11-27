@@ -1,7 +1,7 @@
 #region netDxf library licensed under the MIT License
 // 
 //                       netDxf library
-// Copyright (c) 2019-2021 Daniel Carvajal (haplokuon@gmail.com)
+// Copyright (c) Daniel Carvajal (haplokuon@gmail.com)
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -76,11 +76,6 @@ namespace netDxf.Entities
         Leader,
 
         /// <summary>
-        /// LwPolyline entity, aka lightweight polyline.
-        /// </summary>
-        LwPolyline,
-
-        /// <summary>
         /// Line entity.
         /// </summary>
         Line,
@@ -111,9 +106,19 @@ namespace netDxf.Entities
         PolyfaceMesh,
 
         /// <summary>
-        /// 3d polyline entity.
+        /// Polygon mesh entity.
         /// </summary>
-        Polyline,
+        PolygonMesh,
+
+        /// <summary>
+        /// Polyline2D entity.
+        /// </summary>
+        Polyline2D,
+
+        /// <summary>
+        /// Polyline3D entity.
+        /// </summary>
+        Polyline3D,
 
         /// <summary>
         /// Ray entity.

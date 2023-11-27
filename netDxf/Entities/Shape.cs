@@ -1,7 +1,7 @@
 #region netDxf library licensed under the MIT License
 // 
 //                       netDxf library
-// Copyright (c) 2019-2021 Daniel Carvajal (haplokuon@gmail.com)
+// Copyright (c) Daniel Carvajal (haplokuon@gmail.com)
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -72,7 +72,7 @@ namespace netDxf.Entities
         /// Initializes a new instance of the <c>Shape</c> class.
         /// </summary>
         /// <param name="name">Name of the shape which geometry is defined in the shape <see cref="ShapeStyle">style</see>.</param>
-        /// <param name="style">Shape <see cref="TextStyle">style</see>.</param>
+        /// <param name="style">Shape <see cref="ShapeStyle">style</see>.</param>
         public Shape(string name, ShapeStyle style) 
             : this(name, style, Vector3.Zero, 1.0, 0.0)
         {
@@ -82,7 +82,7 @@ namespace netDxf.Entities
         /// Initializes a new instance of the <c>Shape</c> class.
         /// </summary>
         /// <param name="name">Name of the shape which geometry is defined in the shape <see cref="ShapeStyle">style</see>.</param>
-        /// <param name="style">Shape <see cref="TextStyle">style</see>.</param>
+        /// <param name="style">Shape <see cref="ShapeStyle">style</see>.</param>
         /// <param name="position">Shape insertion point.</param>
         /// <param name="size">Shape size.</param>
         /// <param name="rotation">Shape rotation.</param>
@@ -272,7 +272,10 @@ namespace netDxf.Entities
             {
                 newRotation += 180;
                 newObliqueAngle = 270 - (newRotation - newObliqueAngle);
-                if (newObliqueAngle >= 360) newObliqueAngle -= 360;
+                if (newObliqueAngle >= 360)
+                {
+                    newObliqueAngle -= 360;
+                }
                 mirrorShape = true;
             }
             else
@@ -296,7 +299,7 @@ namespace netDxf.Entities
                 newObliqueAngle = 85;
             }
 
-            // the height must be greater than zero, the cos is always positive between -85 and 85
+            // the height must be greater than zero, the cosine is always positive between -85 and 85
             double newHeight = newVvector.Modulus() * Math.Cos(newObliqueAngle * MathHelper.DegToRad);
             newHeight = MathHelper.IsZero(newHeight) ? MathHelper.Epsilon : newHeight;
 
@@ -319,6 +322,10 @@ namespace netDxf.Entities
             this.ObliqueAngle = mirrorShape ? -newObliqueAngle : newObliqueAngle;
         }
 
+        /// <summary>
+        /// Creates a new Shape that is a copy of the current instance.
+        /// </summary>
+        /// <returns>A new Shape that is a copy of this instance.</returns>
         public override object Clone()
         {
             Shape entity = new Shape(this.name, (ShapeStyle)this.style.Clone())
@@ -338,7 +345,7 @@ namespace netDxf.Entities
                 Rotation = this.rotation,
                 ObliqueAngle = this.obliqueAngle,
                 Thickness = this.thickness
-        };
+            };
 
             foreach (XData data in this.XData.Values)
             {

@@ -1,7 +1,7 @@
 #region netDxf library licensed under the MIT License
 // 
 //                       netDxf library
-// Copyright (c) 2019-2021 Daniel Carvajal (haplokuon@gmail.com)
+// Copyright (c) Daniel Carvajal (haplokuon@gmail.com)
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -766,6 +766,23 @@ namespace netDxf
             return new Matrix3(x, 0.0, 0.0,
                                0.0, y, 0.0,
                                0.0, 0.0, z);
+        }
+
+        /// <summary>
+        /// Build the reflection matrix of a mirror plane that passes through the origin.
+        /// </summary>
+        /// <param name="normal">Mirror plane normal vector.</param>
+        /// <returns>A mirror plane reflection matrix that passes through the origin.</returns>
+        public static Matrix3 Reflection(Vector3 normal)
+        {
+            // plane equation that passes through the origin ax + by + cz = 0
+            Vector3 n = Vector3.Normalize(normal);
+            double a = n.X;
+            double b = n.Y;
+            double c = n.Z;
+            return new Matrix3(1.0 - 2.0 * a * a, -2.0 * a * b, -2.0 * a * c,
+                               -2.0 * a * b, 1.0 - 2.0 * b * b, -2.0 * b * c,
+                               -2.0 * a * c, -2.0 * b * c, 1.0 - 2.0 * c * c);
         }
 
         #endregion

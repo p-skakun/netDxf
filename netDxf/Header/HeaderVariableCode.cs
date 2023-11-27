@@ -1,7 +1,7 @@
 #region netDxf library licensed under the MIT License
 // 
 //                       netDxf library
-// Copyright (c) 2019-2021 Daniel Carvajal (haplokuon@gmail.com)
+// Copyright (c) Daniel Carvajal (haplokuon@gmail.com)
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -225,9 +225,19 @@ namespace netDxf.Header
         public const string PsLtScale = "$PSLTSCALE";
 
         /// <summary>
-        /// Defines number of line segments to be generated for smoothed out polylines.
+        /// Defines number of line segments generated for smoothed out polylines.
         /// </summary>
         public const string SplineSegs = "$SPLINESEGS";
+
+        /// <summary>
+        /// Define the number of segments generated for smoothed polygon meshes in M direction.
+        /// </summary>
+        public const string SurfU = "$SURFU";
+
+        /// <summary>
+        /// Define the number of segments generated for smoothed polygon meshes in N direction.
+        /// </summary>
+        public const string SurfV = "$SURFV";
 
         /// <summary>
         /// Local date/time of drawing creation.

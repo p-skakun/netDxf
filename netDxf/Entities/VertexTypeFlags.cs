@@ -1,7 +1,7 @@
 #region netDxf library licensed under the MIT License
 // 
 //                       netDxf library
-// Copyright (c) 2019-2021 Daniel Carvajal (haplokuon@gmail.com)
+// Copyright (c) Daniel Carvajal (haplokuon@gmail.com)
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -31,12 +31,12 @@ namespace netDxf.Entities
     /// Defines the vertex type.
     /// </summary>
     [Flags]
-    public enum VertexTypeFlags
+    internal enum VertexTypeFlags
     {
         /// <summary>
-        /// 2d polyline vertex.
+        /// Default (2D polyline vertex).
         /// </summary>
-        PolylineVertex = 0,
+        Polyline2DVertex = 0,
 
         /// <summary>
         /// Extra vertex created by curve-fitting.
@@ -67,12 +67,12 @@ namespace netDxf.Entities
         /// <summary>
         /// 3D polyline vertex.
         /// </summary>
-        Polyline3dVertex = 32,
+        Polyline3DVertex = 32,
 
         /// <summary>
-        /// 3D polygon mesh.
+        /// 3D polygon mesh vertex.
         /// </summary>
-        Polygon3dMesh = 64,
+        Polygon3DMeshVertex = 64,
 
         /// <summary>
         /// Polyface mesh vertex.

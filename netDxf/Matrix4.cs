@@ -1,7 +1,7 @@
 #region netDxf library licensed under the MIT License
 // 
 //                       netDxf library
-// Copyright (c) 2019-2021 Daniel Carvajal (haplokuon@gmail.com)
+// Copyright (c) Daniel Carvajal (haplokuon@gmail.com)
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -969,36 +969,56 @@ namespace netDxf
                                0.0, 0.0, z, 0.0,
                                0.0, 0.0, 0.0, 1.0);
         }
-		
-		/// <summary>
-		/// Build a translation matrix.
-		/// </summary>
-		/// <param name="vector">Translation vector along the X, Y, and Z axis.</param>
-		/// <returns>A translation matrix.</returns>
-		/// <remarks>Matrix4 adopts the convention of using column vectors to represent a transformation matrix.</remarks>
-		public static Matrix4 Translation(Vector3 vector)
-		{
-			return new Matrix4(1.0, 0.0, 0.0, vector.X,
+        
+        /// <summary>
+        /// Build a translation matrix.
+        /// </summary>
+        /// <param name="vector">Translation vector along the X, Y, and Z axis.</param>
+        /// <returns>A translation matrix.</returns>
+        /// <remarks>Matrix4 adopts the convention of using column vectors to represent a transformation matrix.</remarks>
+        public static Matrix4 Translation(Vector3 vector)
+        {
+            return new Matrix4(1.0, 0.0, 0.0, vector.X,
                                0.0, 1.0, 0.0, vector.Y,
                                0.0, 0.0, 1.0, vector.Z,
                                0.0, 0.0, 0.0, 1.0);
-		}
-		
-		/// <summary>
-		/// Build a translation matrix.
-		/// </summary>
-		/// <param name="x">Translation along the X axis.</param>
-		/// <param name="y">Translation along the Y axis.</param>
-		/// <param name="z">Translation along the Z axis.</param>
-		/// <returns>A translation matrix.</returns>
-		/// <remarks>Matrix4 adopts the convention of using column vectors to represent a transformation matrix.</remarks>
-		public static Matrix4 Translation(double x, double y, double z)
-		{
-			return new Matrix4(1.0, 0.0, 0.0, x,
+        }
+        
+        /// <summary>
+        /// Build a translation matrix.
+        /// </summary>
+        /// <param name="x">Translation along the X axis.</param>
+        /// <param name="y">Translation along the Y axis.</param>
+        /// <param name="z">Translation along the Z axis.</param>
+        /// <returns>A translation matrix.</returns>
+        /// <remarks>Matrix4 adopts the convention of using column vectors to represent a transformation matrix.</remarks>
+        public static Matrix4 Translation(double x, double y, double z)
+        {
+            return new Matrix4(1.0, 0.0, 0.0, x,
                                0.0, 1.0, 0.0, y,
                                0.0, 0.0, 1.0, z,
-                               0.0, 0.0, 0.0, 1);
-		}
+                               0.0, 0.0, 0.0, 1.0);
+        }
+
+        /// <summary>
+        /// Build the reflection matrix of a mirror plane that passes through a point.
+        /// </summary>
+        /// <param name="normal">Mirror plane normal vector.</param>
+        /// <param name="point">A point on the mirror plane.</param>
+        /// <returns>A mirror plane reflection matrix that passes through a point.</returns>
+        public static Matrix4 Reflection(Vector3 normal, Vector3 point)
+        {
+            // plane equation that passes through a point ax + by + cz + d = 0 where d = -point·normal
+            Vector3 n = Vector3.Normalize(normal);
+            double a = n.X;
+            double b = n.Y;
+            double c = n.Z;
+            double d = -Vector3.DotProduct(point, n);
+            return new Matrix4(1.0 - 2.0 * a * a, -2.0 * a * b, -2.0 * a * c, -2.0 * a * d,
+                               -2.0 * a * b, 1.0 - 2.0 * b * b, -2.0 * b * c, -2.0 * b * d,
+                               -2.0 * a * c, -2.0 * b * c, 1.0 - 2.0 * c * c, -2.0 * c * d,
+                               0.0, 0.0, 0.0, 1.0);
+        }
 
         #endregion
 

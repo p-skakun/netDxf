@@ -1,7 +1,7 @@
 #region netDxf library licensed under the MIT License
 // 
 //                       netDxf library
-// Copyright (c) 2019-2021 Daniel Carvajal (haplokuon@gmail.com)
+// Copyright (c) Daniel Carvajal (haplokuon@gmail.com)
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -49,27 +49,23 @@ namespace netDxf.Tables
         #region constants
 
         /// <summary>
+        /// Default text style font.
+        /// </summary>
+        public const string DefaultShapeFile = "ltypeshp.shx";
+
+        /// <summary>
         /// Gets the default shape style.
         /// </summary>
         /// <remarks>AutoCad stores the shapes for the predefined complex linetypes in the ltypeshp.shx file.</remarks>
         internal static ShapeStyle Default
         {
-            get { return new ShapeStyle("LTYPESHP.SHX");}
+            get { return new ShapeStyle("ltypeshp", ShapeStyle.DefaultShapeFile);}
         }
 
         #endregion
 
         #region constructors
-
-        /// <summary>
-        /// Initializes a new instance of the <c>ShapeStyle</c> class.
-        /// </summary>
-        /// <param name="file">Shape definitions SHX file.</param>
-        public ShapeStyle(string file)
-            : this(Path.GetFileNameWithoutExtension(file), file, 0.0, 1.0, 0.0)
-        {
-        }
-
+        
         /// <summary>
         /// Initializes a new instance of the <c>ShapeStyle</c> class.
         /// </summary>
@@ -325,7 +321,7 @@ namespace netDxf.Tables
             {
                 Encoding encoding = new ASCIIEncoding();
 
-                byte[] sentinel = reader.ReadBytes(24);
+                byte[] sentinel = reader.ReadBytes(24); // the use of the last three bytes is unknown, the first 21 hold the file signature
                 StringBuilder sb = new StringBuilder(21);
                 for (int i = 0; i < 21; i++)
                 {
@@ -353,11 +349,11 @@ namespace netDxf.Tables
                 for (int i = 0; i < num; i++)
                 {
                     string n = NullTerminatedString(reader, encoding);
-                    reader.ReadBytes(numBytes[i] - (n.Length + 1)); // these bytes holds the shape geometry
                     if (name.Equals(n, StringComparison.InvariantCultureIgnoreCase))
                     {
                         return numbers[i];
                     }
+                    reader.ReadBytes(numBytes[i] - (n.Length + 1)); // these bytes holds the shape geometry
                 }
             }
 
@@ -394,7 +390,7 @@ namespace netDxf.Tables
             {
                 Encoding encoding = new ASCIIEncoding();
 
-                byte[] sentinel = reader.ReadBytes(24);
+                byte[] sentinel = reader.ReadBytes(24); // the use of the last three bytes is unknown, the first 21 hold the file signature
                 StringBuilder sb = new StringBuilder(21);
                 for (int i = 0; i < 21; i++)
                 {
@@ -429,12 +425,11 @@ namespace netDxf.Tables
                 for (int i = 0; i < num; i++)
                 {
                     string name = NullTerminatedString(reader, encoding);
-                    reader.ReadBytes(numBytes[i] - (name.Length + 1)); // these bytes holds the shape geometry
-
                     if (index == i)
                     {
                         return name;
                     }
+                    reader.ReadBytes(numBytes[i] - (name.Length + 1)); // these bytes holds the shape geometry
                 }
             }
 
@@ -755,6 +750,36 @@ namespace netDxf.Tables
         #endregion
 
         #region overrides
+
+        /// <summary>
+        /// Checks if this instance has been referenced by other DxfObjects. 
+        /// </summary>
+        /// <returns>
+        /// Returns true if this instance has been referenced by other DxfObjects, false otherwise.
+        /// It will always return false if this instance does not belong to a document.
+        /// </returns>
+        /// <remarks>
+        /// This method returns the same value as the HasReferences method that can be found in the TableObjects class.
+        /// </remarks>
+        public override bool HasReferences()
+        {
+            return this.Owner != null && this.Owner.HasReferences(this.Name);
+        }
+
+        /// <summary>
+        /// Gets the list of DxfObjects referenced by this instance.
+        /// </summary>
+        /// <returns>
+        /// A list of DxfObjectReference that contains the DxfObject referenced by this instance and the number of times it does.
+        /// It will return null if this instance does not belong to a document.
+        /// </returns>
+        /// <remarks>
+        /// This method returns the same list as the GetReferences method that can be found in the TableObjects class.
+        /// </remarks>
+        public override List<DxfObjectReference> GetReferences()
+        {
+            return this.Owner?.GetReferences(this.Name);
+        }
 
         /// <summary>
         /// Creates a new TextStyle that is a copy of the current instance.

@@ -1,7 +1,7 @@
 #region netDxf library licensed under the MIT License
 // 
 //                       netDxf library
-// Copyright (c) 2019-2021 Daniel Carvajal (haplokuon@gmail.com)
+// Copyright (c) Daniel Carvajal (haplokuon@gmail.com)
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -80,11 +80,32 @@ namespace netDxf.Entities
             this.center = center;
             if (radius <= 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(radius), radius, "The circle radius must be greater than zero.");
+                throw new ArgumentOutOfRangeException(nameof(radius), radius, "The arc radius must be greater than zero.");
             }
             this.radius = radius;
             this.startAngle = MathHelper.NormalizeAngle(startAngle);
             this.endAngle = MathHelper.NormalizeAngle(endAngle);
+            this.thickness = 0.0;
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <c>Arc</c> class.
+        /// </summary>
+        /// <param name="startPoint">Arc start point.</param>
+        /// <param name="endPoint">Arc end point.</param>
+        /// <param name="bulge">Bulge value.</param>
+        public Arc(Vector2 startPoint, Vector2 endPoint, double bulge)
+            : base(EntityType.Arc, DxfObjectCode.Arc)
+        {
+            Tuple<Vector2, double, double, double> data = MathHelper.ArcFromBulge(startPoint, endPoint, bulge);
+            if (data.Item2 <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(radius), radius, "The arc radius must be greater than zero.");
+            }
+            this.center = new Vector3(data.Item1.X, data.Item1.Y, 0.0) ;
+            this.radius = data.Item2;
+            this.startAngle = data.Item3;
+            this.endAngle = data.Item4;
             this.thickness = 0.0;
         }
 
@@ -110,7 +131,9 @@ namespace netDxf.Entities
             set
             {
                 if (value <= 0)
+                {
                     throw new ArgumentOutOfRangeException(nameof(value), value, "The arc radius must be greater than zero.");
+                }
                 this.radius = value;
             }
         }
@@ -170,8 +193,8 @@ namespace netDxf.Entities
             for (int i = 0; i < precision; i++)
             {
                 double angle = start + delta*i;
-                double sine = this.radius*Math.Sin(angle);
-                double cosine = this.radius*Math.Cos(angle);
+                double sine = this.radius * Math.Sin(angle);
+                double cosine = this.radius * Math.Cos(angle);
                 ocsVertexes.Add(new Vector2(cosine, sine));
             }
 
@@ -179,16 +202,16 @@ namespace netDxf.Entities
         }
 
         /// <summary>
-        /// Converts the arc in a Polyline.
+        /// Converts the arc in a Polyline2D.
         /// </summary>
         /// <param name="precision">Number of divisions.</param>
-        /// <returns>A new instance of <see cref="LwPolyline">LightWeightPolyline</see> that represents the arc.</returns>
-        public LwPolyline ToPolyline(int precision)
+        /// <returns>A new instance of <see cref="Polyline2D">Polyline2D</see> that represents the arc.</returns>
+        public Polyline2D ToPolyline2D(int precision)
         {
             IEnumerable<Vector2> vertexes = this.PolygonalVertexes(precision);
             Vector3 ocsCenter = MathHelper.Transform(this.center, this.Normal, CoordinateSystem.World, CoordinateSystem.Object);
 
-            LwPolyline poly = new LwPolyline
+            Polyline2D poly = new Polyline2D
             {
                 Layer = (Layer) this.Layer.Clone(),
                 Linetype = (Linetype) this.Linetype.Clone(),
@@ -203,7 +226,7 @@ namespace netDxf.Entities
             };
             foreach (Vector2 v in vertexes)
             {
-                poly.Vertexes.Add(new LwPolylineVertex(v.X + ocsCenter.X, v.Y + ocsCenter.Y));
+                poly.Vertexes.Add(new Polyline2DVertex(v.X + ocsCenter.X, v.Y + ocsCenter.Y));
             }
             return poly;
         }

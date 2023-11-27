@@ -1,7 +1,7 @@
 #region netDxf library licensed under the MIT License
 // 
 //                       netDxf library
-// Copyright (c) 2019-2021 Daniel Carvajal (haplokuon@gmail.com)
+// Copyright (c) Daniel Carvajal (haplokuon@gmail.com)
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -108,11 +108,11 @@ namespace netDxf.Collections
         }
 
         /// <summary>
-        /// Gets the list of <see cref="Face3d">3d faces</see> in the active layout.
+        /// Gets the list of <see cref="Face3D">3d faces</see> in the active layout.
         /// </summary>
-        public IEnumerable<Face3d> Faces3d
+        public IEnumerable<Face3D> Faces3D
         {
-            get { return this.document.Layouts[this.activeLayout].AssociatedBlock.Entities.OfType<Face3d>(); }
+            get { return this.document.Layouts[this.activeLayout].AssociatedBlock.Entities.OfType<Face3D>(); }
         }
 
         /// <summary>
@@ -156,19 +156,19 @@ namespace netDxf.Collections
         }
 
         /// <summary>
-        /// Gets the list of <see cref="Polyline">polylines</see> in the active layout.
+        /// Gets the list of <see cref="Polyline2D">polylines</see> in the active layout.
         /// </summary>
-        public IEnumerable<Polyline> Polylines
+        public IEnumerable<Polyline2D> Polylines2D
         {
-            get { return this.document.Layouts[this.activeLayout].AssociatedBlock.Entities.OfType<Polyline>(); }
+            get { return this.document.Layouts[this.activeLayout].AssociatedBlock.Entities.OfType<Polyline2D>(); }
         }
 
         /// <summary>
-        /// Gets the list of <see cref="LwPolyline">light weight polylines</see> in the active layout.
+        /// Gets the list of <see cref="Polyline3D">polylines</see> in the active layout.
         /// </summary>
-        public IEnumerable<LwPolyline> LwPolylines
+        public IEnumerable<Polyline3D> Polylines3D
         {
-            get { return this.document.Layouts[this.activeLayout].AssociatedBlock.Entities.OfType<LwPolyline>(); }
+            get { return this.document.Layouts[this.activeLayout].AssociatedBlock.Entities.OfType<Polyline3D>(); }
         }
 
         /// <summary>
@@ -177,6 +177,14 @@ namespace netDxf.Collections
         public IEnumerable<PolyfaceMesh> PolyfaceMeshes
         {
             get { return this.document.Layouts[this.activeLayout].AssociatedBlock.Entities.OfType<PolyfaceMesh>(); }
+        }
+
+        /// <summary>
+        /// Gets the list of <see cref="PolygonMeshes">polygon meshes</see> in the active layout.
+        /// </summary>
+        public IEnumerable<PolygonMesh> PolygonMeshes
+        {
+            get { return this.document.Layouts[this.activeLayout].AssociatedBlock.Entities.OfType<PolygonMesh>(); }
         }
 
         /// <summary>
@@ -307,13 +315,13 @@ namespace netDxf.Collections
             get { return this.document.Layouts[this.activeLayout].AssociatedBlock.Entities.OfType<Wipeout>(); }
         }
 
-        /// <summary>
-        /// Gets the list of <see cref="AttributeDefinition">attribute definitions</see> in the active layout.
-        /// </summary>
-        public IEnumerable<AttributeDefinition> AttributeDefinitions
-        {
-            get { return this.document.Layouts[this.activeLayout].AssociatedBlock.AttributeDefinitions.Values; }
-        }
+        ///// <summary>
+        ///// Gets the list of <see cref="AttributeDefinition">attribute definitions</see> in the active layout.
+        ///// </summary>
+        //public IEnumerable<AttributeDefinition> AttributeDefinitions
+        //{
+        //    get { return this.document.Layouts[this.activeLayout].AssociatedBlock.AttributeDefinitions.Values; }
+        //}
 
         #endregion
 
@@ -410,7 +418,7 @@ namespace netDxf.Collections
             {
                 return false;
             }
-            
+
             // if an entity belongs to a document always has a handle
             Debug.Assert(entity.Handle != null, "The entity has no handle.");
 

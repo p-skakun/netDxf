@@ -1,7 +1,7 @@
 #region netDxf library licensed under the MIT License
 // 
 //                       netDxf library
-// Copyright (c) 2019-2021 Daniel Carvajal (haplokuon@gmail.com)
+// Copyright (c) Daniel Carvajal (haplokuon@gmail.com)
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -27,6 +27,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using netDxf.Entities;
+using netDxf.Tables;
 using netDxf.Units;
 
 namespace netDxf.Header
@@ -38,6 +39,7 @@ namespace netDxf.Header
     {
         #region private fields
 
+        private UCS currentUCS;
         private readonly Dictionary<string, HeaderVariable> variables;
         private readonly Dictionary<string, HeaderVariable> customVariables;
 
@@ -86,16 +88,16 @@ namespace netDxf.Header
                 {HeaderVariableCode.PLineGen, new HeaderVariable(HeaderVariableCode.PLineGen, 70, (short) 0)},
                 {HeaderVariableCode.PsLtScale, new HeaderVariable(HeaderVariableCode.PsLtScale, 70, (short) 1)},
                 {HeaderVariableCode.SplineSegs, new HeaderVariable(HeaderVariableCode.SplineSegs, 70, (short) 8)},
+                {HeaderVariableCode.SurfU, new HeaderVariable(HeaderVariableCode.SurfU, 70, (short) 6)},
+                {HeaderVariableCode.SurfV, new HeaderVariable(HeaderVariableCode.SurfV, 70, (short) 6)},
                 {HeaderVariableCode.TdCreate, new HeaderVariable(HeaderVariableCode.TdCreate, 40, DateTime.Now)},
                 {HeaderVariableCode.TduCreate, new HeaderVariable(HeaderVariableCode.TduCreate, 40, DateTime.UtcNow)},
                 {HeaderVariableCode.TdUpdate, new HeaderVariable(HeaderVariableCode.TdUpdate, 40, DateTime.Now)},
                 {HeaderVariableCode.TduUpdate, new HeaderVariable(HeaderVariableCode.TduUpdate, 40, DateTime.UtcNow)},
-                {HeaderVariableCode.TdinDwg, new HeaderVariable(HeaderVariableCode.TdinDwg, 40, new TimeSpan())},
-                {HeaderVariableCode.UcsOrg, new HeaderVariable(HeaderVariableCode.UcsOrg, 30, Vector3.Zero)},
-                {HeaderVariableCode.UcsXDir, new HeaderVariable(HeaderVariableCode.UcsXDir, 30, Vector3.UnitX)},
-                {HeaderVariableCode.UcsYDir, new HeaderVariable(HeaderVariableCode.UcsYDir, 30, Vector3.UnitY)}
+                {HeaderVariableCode.TdinDwg, new HeaderVariable(HeaderVariableCode.TdinDwg, 40, new TimeSpan())}
             };
 
+            this.currentUCS = new UCS("Unnamed");
             this.customVariables = new Dictionary<string, HeaderVariable>(StringComparer.OrdinalIgnoreCase);
         }
 
@@ -565,18 +567,71 @@ namespace netDxf.Header
         }
 
         /// <summary>
-        /// Defines number of line segments to be generated for smoothed polylines.
+        /// Defines number of line segments generated for smoothed polylines.
         /// </summary>
+        /// <remarks>
+        /// Accepted values must be greater than 0. Default value: 6.<br />
+        /// Even thought AutoCad accepts negative values for the SplineSegs header values only positive ones are supported.
+        /// </remarks>
         public short SplineSegs
         {
             get { return (short) this.variables[HeaderVariableCode.SplineSegs].Value; }
-            set { this.variables[HeaderVariableCode.SplineSegs].Value = value; }
+            set
+            {
+                if (value <= 0)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(value), value, "Values must be greater than 0.");
+                }
+                this.variables[HeaderVariableCode.SplineSegs].Value = value;
+            }
+        }
+
+        /// <summary>
+        /// Define the number of segments generated for smoothed polygon meshes in U direction (local X axis).
+        /// </summary>
+        /// <remarks>
+        /// Accepted value range from 0 to 200. Default value: 6.<br />
+        /// Although in AutoCAD the header variable SurfU accepts values less than 2, the minimum vertexes generated is 3 equivalent to a SurfV value of 2.
+        /// </remarks>
+        public short SurfU
+        {
+            get { return (short) this.variables[HeaderVariableCode.SurfU].Value; }
+            set
+            {
+                if (value < 0 || value > 200)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(value), value, "Values must be between 0 and 200.");
+                }
+                this.variables[HeaderVariableCode.SurfU].Value = value;
+            }
+        }
+
+        /// <summary>
+        /// Define the number of segments generated for smoothed polygon meshes in V direction (local Y axis).
+        /// </summary>
+        /// <remarks>
+        /// Accepted value range from 0 to 200. Default value: 6.<br />
+        /// Although in AutoCAD the header variable SurfV accepts values less than 2, the minimum vertexes generated is 3 equivalent to a SurfV value of 2.
+        /// </remarks>
+        public short SurfV
+        {
+            get { return (short) this.variables[HeaderVariableCode.SurfV].Value; }
+            set
+            {
+                if (value < 0 || value > 200)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(value), value, "Values must be between 0 and 200.");
+                }
+                this.variables[HeaderVariableCode.SurfV].Value = value;
+            }
         }
 
         /// <summary>
         /// Local date/time of drawing creation.
         /// </summary>
-        /// <remarks>This date/time is local to the time zone where the file was created.</remarks>
+        /// <remarks>
+        /// This date/time is local to the time zone where the file was created.
+        /// </remarks>
         public DateTime TdCreate
         {
             get { return (DateTime) this.variables[HeaderVariableCode.TdCreate].Value; }
@@ -621,36 +676,15 @@ namespace netDxf.Header
         }
 
         /// <summary>
-        /// Origin of current UCS (in WCS).
-        /// </summary>
-        public Vector3 UcsOrg
-        {
-            get { return (Vector3)this.variables[HeaderVariableCode.UcsOrg].Value; }
-            set { this.variables[HeaderVariableCode.UcsOrg].Value = value; }
-        }
-
-        /// <summary>
-        /// Direction of the current UCS X axis (in WCS).
+        /// Gets ore sets the current/active UCS of the drawing.
         /// </summary>
         /// <remarks>
-        /// The vectors UcsXDir and UcsYDir must be perpendicular.
+        /// This field encapsulates the three drawing variables UcsOrg, UcsXDir, and UcsYDir.
         /// </remarks>
-        public Vector3 UcsXDir
+        public UCS CurrentUCS
         {
-            get { return (Vector3)this.variables[HeaderVariableCode.UcsXDir].Value; }
-            set { this.variables[HeaderVariableCode.UcsXDir].Value = value; }
-        }
-
-        /// <summary>
-        /// Direction of the current UCS Y axis (in WCS).
-        /// </summary>
-        /// <remarks>
-        /// The vectors UcsXDir and UcsYDir must be perpendicular.
-        /// </remarks>
-        public Vector3 UcsYDir
-        {
-            get { return (Vector3)this.variables[HeaderVariableCode.UcsYDir].Value; }
-            set { this.variables[HeaderVariableCode.UcsYDir].Value = value; }
+            get { return this.currentUCS; } 
+            set { this.currentUCS = value ?? throw new ArgumentNullException(nameof(value)); } 
         }
 
         #endregion

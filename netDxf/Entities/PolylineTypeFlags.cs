@@ -1,7 +1,7 @@
 #region netDxf library licensed under the MIT License
 // 
 //                       netDxf library
-// Copyright (c) 2019-2021 Daniel Carvajal (haplokuon@gmail.com)
+// Copyright (c) Daniel Carvajal (haplokuon@gmail.com)
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -32,10 +32,10 @@ namespace netDxf.Entities
     /// </summary>
     /// <remarks>Bit flag.</remarks>
     [Flags]
-    public enum PolylineTypeFlags
+    internal enum PolylineTypeFlags
     {
         /// <summary>
-        /// Default, open polyline.
+        /// Default (open polyline).
         /// </summary>
         OpenPolyline = 0,
 

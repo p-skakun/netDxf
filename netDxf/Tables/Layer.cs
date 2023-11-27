@@ -1,7 +1,7 @@
 #region netDxf library licensed under the MIT License
 // 
 //                       netDxf library
-// Copyright (c) 2019-2021 Daniel Carvajal (haplokuon@gmail.com)
+// Copyright (c) Daniel Carvajal (haplokuon@gmail.com)
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -24,6 +24,7 @@
 #endregion
 
 using System;
+using System.Collections.Generic;
 using netDxf.Collections;
 
 namespace netDxf.Tables
@@ -54,6 +55,7 @@ namespace netDxf.Tables
 
         #region private fields
 
+        private string description;
         private AciColor color;
         private bool isVisible;
         private bool isFrozen;
@@ -101,6 +103,7 @@ namespace netDxf.Tables
                 throw new ArgumentNullException(nameof(name), "The layer name should be at least one character long.");
             }
 
+            this.description = string.Empty;
             this.IsReserved = name.Equals(DefaultName, StringComparison.OrdinalIgnoreCase);
             this.color = AciColor.Default;
             this.linetype = Linetype.Continuous;
@@ -113,6 +116,19 @@ namespace netDxf.Tables
         #endregion
 
         #region public properties
+
+        /// <summary>
+        /// Gets or sets the layer description.
+        /// </summary>
+        /// <remarks>
+        /// The layer description is saved in the extended data of the layer, it will be handle automatically when the file is saved or loaded.<br />
+        /// New line characters are not allowed.
+        /// </remarks>
+        public string Description
+        {
+            get { return this.description; }
+            set { this.description = string.IsNullOrEmpty(value) ? string.Empty : value; }
+        }
 
         /// <summary>
         /// Gets or sets the layer <see cref="Linetype">line type</see>.
@@ -228,6 +244,36 @@ namespace netDxf.Tables
         #endregion
 
         #region overrides
+
+        /// <summary>
+        /// Checks if this instance has been referenced by other DxfObjects. 
+        /// </summary>
+        /// <returns>
+        /// Returns true if this instance has been referenced by other DxfObjects, false otherwise.
+        /// It will always return false if this instance does not belong to a document.
+        /// </returns>
+        /// <remarks>
+        /// This method returns the same value as the HasReferences method that can be found in the TableObjects class.
+        /// </remarks>
+        public override bool HasReferences()
+        {
+            return this.Owner != null && this.Owner.HasReferences(this.Name);
+        }
+
+        /// <summary>
+        /// Gets the list of DxfObjects referenced by this instance.
+        /// </summary>
+        /// <returns>
+        /// A list of DxfObjectReference that contains the DxfObject referenced by this instance and the number of times it does.
+        /// It will return null if this instance does not belong to a document.
+        /// </returns>
+        /// <remarks>
+        /// This method returns the same list as the GetReferences method that can be found in the TableObjects class.
+        /// </remarks>
+        public override List<DxfObjectReference> GetReferences()
+        {
+            return this.Owner?.GetReferences(this.Name);
+        }
 
         /// <summary>
         /// Creates a new Layer that is a copy of the current instance.

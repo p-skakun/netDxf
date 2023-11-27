@@ -1,7 +1,7 @@
 #region netDxf library licensed under the MIT License
 // 
 //                       netDxf library
-// Copyright (c) 2019-2021 Daniel Carvajal (haplokuon@gmail.com)
+// Copyright (c) Daniel Carvajal (haplokuon@gmail.com)
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -25,6 +25,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace netDxf.Entities
 {
@@ -110,7 +111,6 @@ namespace netDxf.Entities
             public Polyline()
                 : base(EdgeType.Polyline)
             {
-                this.IsClosed = true;
             }
 
             /// <summary>
@@ -125,9 +125,9 @@ namespace netDxf.Entities
                     throw new ArgumentNullException(nameof(entity));
                 }
 
-                if (entity.Type == EntityType.LwPolyline)
+                if (entity.Type == EntityType.Polyline2D)
                 {
-                    Entities.LwPolyline poly = (Entities.LwPolyline) entity;
+                    Entities.Polyline2D poly = (Entities.Polyline2D) entity;
                     this.IsClosed = poly.IsClosed;
                     this.Vertexes = new Vector3[poly.Vertexes.Count];
                     for (int i = 0; i < poly.Vertexes.Count; i++)
@@ -135,11 +135,11 @@ namespace netDxf.Entities
                         this.Vertexes[i] = new Vector3(poly.Vertexes[i].Position.X, poly.Vertexes[i].Position.Y, poly.Vertexes[i].Bulge);
                     }
                 }
-                else if (entity.Type == EntityType.Polyline)
+                else if (entity.Type == EntityType.Polyline3D)
                 {
                     Matrix3 trans = MathHelper.ArbitraryAxis(entity.Normal).Transpose();
 
-                    Entities.Polyline poly = (Entities.Polyline) entity;
+                    Entities.Polyline3D poly = (Entities.Polyline3D) entity;
                     this.IsClosed = poly.IsClosed;
                     this.Vertexes = new Vector3[poly.Vertexes.Count];
                     for (int i = 0; i < poly.Vertexes.Count; i++)
@@ -149,7 +149,86 @@ namespace netDxf.Entities
                     }
                 }
                 else
-                    throw new ArgumentException("The entity is not a LwPolyline or a Polyline", nameof(entity));
+                    throw new ArgumentException("The entity is not a Polyline2D or a Polyline3D", nameof(entity));
+            }
+
+            /// <summary>
+            /// Decompose the actual polyline in its internal entities, <see cref="HatchBoundaryPath.Line">lines</see> and <see cref="HatchBoundaryPath.Arc">arcs</see>.
+            /// </summary>
+            /// <returns>A list of <see cref="HatchBoundaryPath.Line">lines</see> and <see cref="HatchBoundaryPath.Arc">arcs</see> that made up the polyline.</returns>
+            public List<HatchBoundaryPath.Edge> Explode()
+            {
+                List<HatchBoundaryPath.Edge> edges = new List<HatchBoundaryPath.Edge>();
+
+                int index = 0;
+                foreach (Vector3 vertex in this.Vertexes)
+                {
+                    double bulge = vertex.Z;
+                    Vector2 p1;
+                    Vector2 p2;
+
+                    if (index == this.Vertexes.Length - 1)
+                    {
+                        if (!this.IsClosed)
+                        {
+                            break;
+                        }
+
+                        p1 = new Vector2(vertex.X, vertex.Y);
+                        p2 = new Vector2(this.Vertexes[0].X, this.Vertexes[0].Y);
+                    }
+                    else
+                    {
+                        p1 = new Vector2(vertex.X, vertex.Y);
+                        p2 = new Vector2(this.Vertexes[index + 1].X, this.Vertexes[index + 1].Y);
+                    }
+
+                    if (MathHelper.IsZero(bulge))
+                    {
+                        // the polyline edge is a line
+                        HatchBoundaryPath.Line line = new Line
+                        {
+                            Start = p1,
+                            End = p2
+                        };
+                        edges.Add(line);
+                    }
+                    else
+                    {
+                        // the polyline edge is an arc
+                        Tuple<Vector2, double, double, double> arcData = MathHelper.ArcFromBulge(p1, p2, bulge);
+                        Vector2 center = arcData.Item1;
+                        double radius = arcData.Item2;
+                        double startAngle = arcData.Item3;
+                        double endAngle = arcData.Item4;
+
+                        // avoid arcs with very small radius, draw a line instead
+                        if (MathHelper.IsZero(radius))
+                        {
+                            // the polyline edge is a line
+                            HatchBoundaryPath.Line line = new Line
+                            {
+                                Start = p1,
+                                End = p2
+                            };
+                            edges.Add(line);
+                        }
+                        else
+                        {
+                            HatchBoundaryPath.Arc arc = new HatchBoundaryPath.Arc
+                            {
+                                Center = center,
+                                Radius = radius,
+                                StartAngle = startAngle,
+                                EndAngle = endAngle,
+                            };
+                            edges.Add(arc);
+                        }
+                    }
+
+                    index++;
+                }
+                return edges;
             }
 
             /// <summary>
@@ -167,12 +246,12 @@ namespace netDxf.Entities
             /// <returns>An <see cref="EntityObject">entity</see> equivalent to the actual edge.</returns>
             public override EntityObject ConvertTo()
             {
-                List<LwPolylineVertex> points = new List<LwPolylineVertex>(this.Vertexes.Length);
+                List<Polyline2DVertex> points = new List<Polyline2DVertex>(this.Vertexes.Length);
                 foreach (Vector3 point in this.Vertexes)
                 {
-                    points.Add(new LwPolylineVertex(point.X, point.Y, point.Z));
+                    points.Add(new Polyline2DVertex(point.X, point.Y, point.Z));
                 }
-                return new Entities.LwPolyline(points, this.IsClosed);
+                return new Entities.Polyline2D(points, this.IsClosed);
             }
 
             /// <summary>
@@ -501,12 +580,9 @@ namespace netDxf.Entities
                     CoordinateSystem.Object);
                 double rotation = Vector2.Angle(new Vector2(ocsAxisPoint.X, ocsAxisPoint.Y))*MathHelper.RadToDeg;
                 double majorAxis = 2*axisPoint.Modulus();
-                return new Entities.Ellipse
+                return new Entities.Ellipse(center, majorAxis, majorAxis*this.MinorRatio)
                 {
-                    MajorAxis = majorAxis,
-                    MinorAxis = majorAxis*this.MinorRatio,
                     Rotation = rotation,
-                    Center = center,
                     StartAngle = this.IsCounterclockwise ? this.StartAngle : 360 - this.EndAngle,
                     EndAngle = this.IsCounterclockwise ? this.EndAngle : 360 - this.StartAngle,
                 };
@@ -595,18 +671,18 @@ namespace netDxf.Entities
                 this.Degree = spline.Degree;
                 this.IsRational = true;
                 this.IsPeriodic = spline.IsClosedPeriodic;
-                if (spline.ControlPoints.Count == 0)
+                if (spline.ControlPoints.Length == 0)
                 {
                     throw new ArgumentException("The HatchBoundaryPath spline edge requires a spline entity with control points.", nameof(entity));
                 }
 
                 Matrix3 trans = MathHelper.ArbitraryAxis(entity.Normal).Transpose();
 
-                this.ControlPoints = new Vector3[spline.ControlPoints.Count];
-                for (int i = 0; i < spline.ControlPoints.Count; i++)
+                this.ControlPoints = new Vector3[spline.ControlPoints.Length];
+                for (int i = 0; i < spline.ControlPoints.Length; i++)
                 {
-                    Vector3 point = trans * spline.ControlPoints[i].Position;
-                    this.ControlPoints[i] = new Vector3(point.X, point.Y, spline.ControlPoints[i].Weight);
+                    Vector3 point = trans * spline.ControlPoints[i];
+                    this.ControlPoints[i] = new Vector3(point.X, point.Y, spline.Weights[i]);
                 }
 
                 this.Knots = new double[spline.Knots.Length];
@@ -631,12 +707,16 @@ namespace netDxf.Entities
             /// <returns>An <see cref="EntityObject">entity</see> equivalent to the actual edge.</returns>
             public override EntityObject ConvertTo()
             {
-                List<SplineVertex> ctrl = new List<SplineVertex>(this.ControlPoints.Length);
+                List<Vector3> ctrl = new List<Vector3>();
+                List<double> weights = new List<double>();
+                List<double> knots = new List<double>(this.Knots);
+
                 foreach (Vector3 point in this.ControlPoints)
                 {
-                    ctrl.Add(new SplineVertex(point.X, point.Y, 0.0, point.Z));
+                    ctrl.Add(new Vector3(point.X, point.Y, 0.0));
+                    weights.Add(point.Z);
                 }
-                return new Entities.Spline(ctrl, new List<double>(this.Knots), this.Degree);
+                return new Entities.Spline(ctrl, weights, knots, this.Degree, this.IsPeriodic);
             }
 
             /// <summary>
@@ -678,7 +758,7 @@ namespace netDxf.Entities
         #region constructor
 
         /// <summary>
-        /// Initializes a new instance of the <c>Hatch</c> class.
+        /// Initializes a new instance of the <c>HatchBoundaryPath</c> class.
         /// </summary>
         /// <param name="edges">List of entities that makes a loop for the hatch boundary paths.</param>
         public HatchBoundaryPath(IEnumerable<EntityObject> edges)
@@ -693,7 +773,11 @@ namespace netDxf.Entities
             this.Update();
         }
 
-        internal HatchBoundaryPath(IEnumerable<Edge> edges)
+        /// <summary>
+        /// Initializes a new instance of the <c>HatchBoundaryPath</c> class.
+        /// </summary>
+        /// <param name="edges">List of edges that makes a loop for the hatch boundary paths.</param>
+        public HatchBoundaryPath(IEnumerable<Edge> edges)
         {
             if (edges == null)
             {
@@ -701,16 +785,26 @@ namespace netDxf.Entities
             }
             this.pathType = HatchBoundaryPathTypeFlags.Derived | HatchBoundaryPathTypeFlags.External;
             this.entities = new List<EntityObject>();
-            this.edges = new List<Edge>(edges);
-            if (this.edges.Count == 1 && this.edges[0].Type == EdgeType.Polyline)
+            this.edges = new List<Edge>();
+            foreach (Edge edge in edges)
             {
-                this.pathType |= HatchBoundaryPathTypeFlags.Polyline;
-            }
-            else
-            {
-                foreach (Edge edge in this.edges)
+                if (edges.Count() == 1 && edge.Type == EdgeType.Polyline)
                 {
-                    if(edge.Type == EdgeType.Polyline) throw new ArgumentException("Only a single polyline edge can be part of a HatchBoundaryPath.", nameof(edges));
+                    this.pathType |= HatchBoundaryPathTypeFlags.Polyline;
+                    this.edges.Add(edge);
+                }
+                else
+                {
+                    if (edge.Type == EdgeType.Polyline)
+                    {
+                        // Only a single polyline edge can be part of a HatchBoundaryPath. The polyline will be automatically exploded.
+                        HatchBoundaryPath.Polyline polyline = (HatchBoundaryPath.Polyline)edge;
+                        this.edges.AddRange(polyline.Explode());
+                    }
+                    else
+                    {
+                        this.edges.Add(edge);
+                    }
                 }
             }
         }
@@ -816,8 +910,8 @@ namespace netDxf.Entities
                     case EntityType.Line:
                         this.edges.Add(Line.ConvertFrom(entity));
                         break;
-                    case EntityType.LwPolyline:
-                        Entities.LwPolyline lwpoly = (Entities.LwPolyline)entity;
+                    case EntityType.Polyline2D:
+                        Entities.Polyline2D lwpoly = (Entities.Polyline2D)entity;
                         if (lwpoly.IsClosed)
                         {
                             if (this.edges.Count != 0)
@@ -831,8 +925,8 @@ namespace netDxf.Entities
                         else
                             this.SetInternalInfo(lwpoly.Explode(), false); // open polylines will always be exploded, only one polyline can be present in a path
                         break;
-                    case EntityType.Polyline:
-                        Entities.Polyline poly = (Entities.Polyline) entity;
+                    case EntityType.Polyline3D:
+                        Entities.Polyline3D poly = (Entities.Polyline3D) entity;
                         if (poly.IsClosed)
                         {
                             if (this.edges.Count != 0)
@@ -850,7 +944,7 @@ namespace netDxf.Entities
                         this.edges.Add(Spline.ConvertFrom(entity));
                         break;
                     default:
-                        throw new ArgumentException(string.Format("The entity type {0} cannot be part of a hatch boundary. Only Arc, Circle, Ellipse, Line, LwPolyline, and Spline entities are allowed.", entity.Type));
+                        throw new ArgumentException(string.Format("The entity type {0} cannot be part of a hatch boundary. Only Arc, Circle, Ellipse, Line, Polyline2D, Polyline3D, and Spline entities are allowed.", entity.Type));
                 }
             }
         }

@@ -1,7 +1,7 @@
 #region netDxf library licensed under the MIT License
 // 
 //                       netDxf library
-// Copyright (c) 2019-2021 Daniel Carvajal (haplokuon@gmail.com)
+// Copyright (c) Daniel Carvajal (haplokuon@gmail.com)
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -50,6 +50,7 @@ namespace netDxf
         public const string Angular3PointDimension = "AcDb3PointAngularDimension";
         public const string Angular2LineDimension = "AcDb2LineAngularDimension";
         public const string OrdinateDimension = "AcDbOrdinateDimension";
+        public const string ArcDimension = "AcDbArcDimension";
         public const string BlockRecord = "AcDbBlockTableRecord";
         public const string BlockBegin = "AcDbBlockBegin";
         public const string BlockEnd = "AcDbBlockEnd";
@@ -58,7 +59,7 @@ namespace netDxf
         public const string Circle = "AcDbCircle";
         public const string Ellipse = "AcDbEllipse";
         public const string Spline = "AcDbSpline";
-        public const string Face3d = "AcDbFace";
+        public const string Face3D = "AcDbFace";
         public const string Helix = "AcDbHelix";
         public const string Insert = "AcDbBlockReference";
         public const string Line = "AcDbLine";
@@ -67,15 +68,17 @@ namespace netDxf
         public const string MLine = "AcDbMline";
         public const string Point = "AcDbPoint";
         public const string Vertex = "AcDbVertex";
-        public const string Polyline = "AcDb2dPolyline";
         public const string Leader = "AcDbLeader";
-        public const string LwPolyline = "AcDbPolyline";
-        public const string PolylineVertex = "AcDb2dVertex ";
-        public const string Polyline3d = "AcDb3dPolyline";
-        public const string Polyline3dVertex = "AcDb3dPolylineVertex";
+        public const string Polyline = "AcDbPolyline";
+        public const string Polyline2D = "AcDb2dPolyline";
+        public const string Polyline2DVertex = "AcDb2dVertex";
+        public const string Polyline3D = "AcDb3dPolyline";
+        public const string Polyline3DVertex = "AcDb3dPolylineVertex";
         public const string PolyfaceMesh = "AcDbPolyFaceMesh";
         public const string PolyfaceMeshVertex = "AcDbPolyFaceMeshVertex";
         public const string PolyfaceMeshFace = "AcDbFaceRecord";
+        public const string PolygonMesh = "AcDbPolygonMesh";
+        public const string PolygonMeshVertex = "AcDbPolygonMeshVertex";
         public const string Shape = "AcDbShape";
         public const string Solid = "AcDbTrace";
         public const string Trace = "AcDbTrace";

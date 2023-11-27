@@ -1,7 +1,7 @@
 #region netDxf library licensed under the MIT License
 // 
 //                       netDxf library
-// Copyright (c) 2019-2021 Daniel Carvajal (haplokuon@gmail.com)
+// Copyright (c) Daniel Carvajal (haplokuon@gmail.com)
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -282,7 +282,7 @@ namespace netDxf.Entities
             set
             {
                 this.normal = Vector3.Normalize(value);
-                if (Vector3.IsNaN(this.normal))
+                if (Vector3.IsZero(this.normal))
                 {
                     throw new ArgumentException("The normal can not be the zero vector.", nameof(value));
                 }
@@ -324,7 +324,9 @@ namespace netDxf.Entities
             set
             {
                 if (value <= 0)
+                {
                     throw new ArgumentOutOfRangeException(nameof(value), value, "The height should be greater than zero.");
+                }
                 this.height = value;
             }
         }

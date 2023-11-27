@@ -1,7 +1,7 @@
 #region netDxf library licensed under the MIT License
 // 
 //                       netDxf library
-// Copyright (c) 2019-2021 Daniel Carvajal (haplokuon@gmail.com)
+// Copyright (c) Daniel Carvajal (haplokuon@gmail.com)
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -93,7 +93,7 @@ namespace netDxf.Entities
         /// <summary>
         /// Aligned.
         /// </summary>
-        /// <remarks>The text width factor will be automatically adjusted so the text will fit in the specified width.</remarks>
+        /// <remarks>The text height will be automatically adjusted so the text will fit in the specified width.</remarks>
         Aligned,
 
         /// <summary>
@@ -104,7 +104,7 @@ namespace netDxf.Entities
         /// <summary>
         /// Fit.
         /// </summary>
-        /// <remarks>The text height will be automatically adjusted so the text will fit in the specified width.</remarks>
+        /// <remarks>The text width factor will be automatically adjusted so the text will fit in the specified width.</remarks>
         Fit
     }
 }

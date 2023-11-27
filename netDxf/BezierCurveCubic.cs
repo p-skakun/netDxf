@@ -1,7 +1,7 @@
 #region netDxf library licensed under the MIT License
 // 
 //                       netDxf library
-// Copyright (c) 2019-2021 Daniel Carvajal (haplokuon@gmail.com)
+// Copyright (c) Daniel Carvajal (haplokuon@gmail.com)
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -49,7 +49,7 @@ namespace netDxf
         /// and the last the end point.
         /// </remarks>
         public BezierCurveCubic(IEnumerable<Vector3> controlPoints)
-            : base(controlPoints)
+            : base(controlPoints, 3)
         {
         }
 
@@ -61,7 +61,7 @@ namespace netDxf
         /// <param name="secondControlPoint">Second control point.</param>
         /// <param name="endPoint">End anchor point.</param>
         public BezierCurveCubic(Vector3 startPoint, Vector3 firstControlPoint, Vector3 secondControlPoint, Vector3 endPoint)
-            : base(new[]{startPoint, firstControlPoint, secondControlPoint, endPoint})
+            : base(new[]{startPoint, firstControlPoint, secondControlPoint, endPoint}, 3)
         {
         }
 
@@ -114,7 +114,7 @@ namespace netDxf
         /// </summary>
         /// <param name="t">Parameter t, between 0.0 and 1.0.</param>
         /// <returns>A point along the curve.</returns>
-        public Vector3 CalculatePoint(double t)
+        public override Vector3 CalculatePoint(double t)
         {
             if (t < 0.0 || t > 1.0)
             {
@@ -122,18 +122,25 @@ namespace netDxf
             }
 
             double c = 1.0 - t;
-            double c2 = c * c; 
-            double c3 = c2 * c;
-            double t2 = t * t;
-            double t3 = t2 * t;
-            Vector3 point = new Vector3
-            {
-                X = this.StartPoint.X * c3 + this.FirstControlPoint.X * 3 * t * c2 + this.SecondControlPoint.X * 3 * t2 * c + this.EndPoint.X * t3,
-                Y = this.StartPoint.Y * c3 + this.FirstControlPoint.Y * 3 * t * c2 + this.SecondControlPoint.Y * 3 * t2 * c + this.EndPoint.Y * t3,
-                Z = this.StartPoint.Z * c3 + this.FirstControlPoint.Z * 3 * t * c2 + this.SecondControlPoint.Z * 3 * t2 * c + this.EndPoint.Z * t3
-            };
+            return c * c * c * this.StartPoint + 3 * t * c * c * this.FirstControlPoint + 3 * c * t * t * this.SecondControlPoint + t * t * t * this.EndPoint;
+        }
 
-            return point;
+        /// <summary>
+        /// Calculates the tangent vector at parameter t.
+        /// </summary>
+        /// <param name="t">Parameter t, between 0.0 and 1.0.</param>
+        /// <returns>A normalized tangent vector.</returns>
+        public override Vector3 CalculateTangent(double t)
+        {
+            if (t < 0.0 || t > 1.0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(t), t, "The parameter t must be between 0.0 and 1.0.");
+            }
+
+            double c = 1.0 - t;
+            return Vector3.Normalize(
+                -c * c * this.StartPoint + (c * c - 2 * c * t) * this.FirstControlPoint + (2 * c * t - t * t) * this.SecondControlPoint + t * t * this.EndPoint
+            );
         }
 
         /// <summary>
@@ -200,10 +207,9 @@ namespace netDxf
         /// <param name="fitPoints">List of points.</param>
         /// <returns>A list of cubic bezier curves.</returns>
         /// <returns>
-        /// Original https://www.codeproject.com/Articles/31859/Draw-a-Smooth-Curve-through-a-Set-of-2D-Points-wit by Oleg V. Polikarpotchkin and Peter Lee.
+        /// Original code: https://www.codeproject.com/Articles/31859/Draw-a-Smooth-Curve-through-a-Set-of-2D-Points-wit by Oleg V. Polikarpotchkin and Peter Lee.<br />
         /// Modified to allow the use of 3D points, and other minor changes to accomodate the existing classes of this library.<br />
-        /// The total number of curves returned will be equal to the number of fit points minus 1,
-        /// therefore this method is not suitable to use over large number of fit points,
+        /// The total number of curves returned will be equal to the number of fit points minus 1, therefore this method is not suitable to use over large number of fit points,
         /// where other, more computational heavy methods, like the least-squares bezier curve fitting would return a less amount of curves.
         /// In such cases, it is advisable to perform some method to reduce the number of points and to avoid duplicates or very close points.
         /// </returns>
@@ -230,8 +236,8 @@ namespace netDxf
             if (n == 1)
             {
                 // Special case: Bezier curve should be a straight line.
-                firstControlPoint = points[0] + (points[1] - points[0]) / 3;
-                secondControlPoint =  points[1] + (points[0] - points[1]) / 3;
+                firstControlPoint = points[0] + (points[1] - points[0]) / 3.0;
+                secondControlPoint =  points[1] + (points[0] - points[1]) / 3.0;
 
                 curves.Add(new BezierCurveCubic(points[0], firstControlPoint, secondControlPoint, points[1]));
                 return curves;
@@ -257,17 +263,17 @@ namespace netDxf
             {
                 rhs[i] = 4.0 * points[i].Y + 2.0 * points[i + 1].Y;
             }
-            rhs[0] = points[0].Y + 2 * points[1].Y;
+            rhs[0] = points[0].Y + 2.0 * points[1].Y;
             rhs[n - 1] = (8.0 * points[n - 1].Y + points[n].Y) / 2.0;
             // Get first control points Y-values
             double[] y = GetFirstControlPoints(rhs);
 
-            // Set right hand side Y values
+            // Set right hand side Z values
             for (int i = 1; i < n - 1; i++)
             {
                 rhs[i] = 4.0 * points[i].Z + 2.0 * points[i + 1].Z;
             }
-            rhs[0] = points[0].Z + 2 * points[1].Z;
+            rhs[0] = points[0].Z + 2.0 * points[1].Z;
             rhs[n - 1] = (8.0 * points[n - 1].Z + points[n].Z) / 2.0;
             // Get first control points Z-values
             double[] z = GetFirstControlPoints(rhs);
@@ -294,7 +300,7 @@ namespace netDxf
                         (points[n].Z + z[n - 1]) / 2.0);
                 }
 
-                curves.Add(new BezierCurveCubic(points[i], firstControlPoint, secondControlPoint, points[i+1]));
+                curves.Add(new BezierCurveCubic(points[i], firstControlPoint, secondControlPoint, points[i + 1]));
             }
 
             return curves;

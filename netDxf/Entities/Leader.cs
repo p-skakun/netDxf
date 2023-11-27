@@ -1,7 +1,7 @@
 #region netDxf library licensed under the MIT License
 // 
 //                       netDxf library
-// Copyright (c) 2019-2021 Daniel Carvajal (haplokuon@gmail.com)
+// Copyright (c) Daniel Carvajal (haplokuon@gmail.com)
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -801,7 +801,7 @@ namespace netDxf.Entities
 
                     position = hook + this.offset + Vector2.Rotate(textOffset, mText.Rotation * MathHelper.DegToRad);
 
-                    mText.Position = MathHelper.Transform(position, Normal, this.elevation);
+                    mText.Position = MathHelper.Transform(position, this.Normal, this.elevation);
                     mText.Height = textHeight * dimScale;
                     mText.Color = textColor.IsByBlock ? AciColor.ByLayer : textColor;
                     break;

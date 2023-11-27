@@ -1,7 +1,7 @@
 #region netDxf library licensed under the MIT License
 // 
 //                       netDxf library
-// Copyright (c) 2019-2021 Daniel Carvajal (haplokuon@gmail.com)
+// Copyright (c) Daniel Carvajal (haplokuon@gmail.com)
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -316,7 +316,7 @@ namespace netDxf
         public const string Shape = "SHAPE";
 
         /// <summary>
-        /// Spline (nonuniform rational B-splines NURBS).
+        /// Spline (nonuniform rational B-splines, NURBS).
         /// </summary>
         public const string Spline = "SPLINE";
 
@@ -449,6 +449,11 @@ namespace netDxf
         /// Dimension.
         /// </summary>
         public const string Dimension = "DIMENSION";
+
+        /// <summary>
+        /// Arc Length Dimension.
+        /// </summary>
+        public const string ArcDimension = "ARC_DIMENSION";
 
         /// <summary>
         /// Dictionary.

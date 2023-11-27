@@ -1,7 +1,7 @@
 #region netDxf library licensed under the MIT License
 // 
 //                       netDxf library
-// Copyright (c) 2019-2021 Daniel Carvajal (haplokuon@gmail.com)
+// Copyright (c) Daniel Carvajal (haplokuon@gmail.com)
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -105,7 +105,7 @@ namespace netDxf
         /// </summary>
         public static Vector2 UnitX
         {
-            get { return new Vector2(1.0, 0.0) {isNormalized = true}; }
+            get { return new Vector2(1.0, 0.0) { isNormalized = true }; }
         }
 
         /// <summary>
@@ -113,7 +113,7 @@ namespace netDxf
         /// </summary>
         public static Vector2 UnitY
         {
-            get { return new Vector2(0.0, 1.0) {isNormalized = true}; }
+            get { return new Vector2(0.0, 1.0) { isNormalized = true }; }
         }
 
         /// <summary>
@@ -212,6 +212,16 @@ namespace netDxf
         }
 
         /// <summary>
+        ///  Returns a value indicating if all components of the specified vector evaluates to zero.
+        /// </summary>
+        /// <param name="u">Vector2.</param>
+        /// <returns>Returns true if all components of the specified vector evaluates to zero; otherwise, false.</returns>
+        public static bool IsZero(Vector2 u)
+        {
+            return MathHelper.IsZero(u.X) && MathHelper.IsZero(u.Y);
+        }
+
+        /// <summary>
         /// Obtains the dot product of two vectors.
         /// </summary>
         /// <param name="u">Vector2.</param>
@@ -219,7 +229,7 @@ namespace netDxf
         /// <returns>The dot product.</returns>
         public static double DotProduct(Vector2 u, Vector2 v)
         {
-            return u.X*v.X + u.Y*v.Y;
+            return u.X * v.X + u.Y * v.Y;
         }
 
         /// <summary>
@@ -227,20 +237,20 @@ namespace netDxf
         /// </summary>
         /// <param name="u">Vector2.</param>
         /// <param name="v">Vector2.</param>
-        /// <returns>Vector2.</returns>
+        /// <returns>The cross product.</returns>
         public static double CrossProduct(Vector2 u, Vector2 v)
         {
-            return u.X*v.Y - u.Y*v.X;
+            return u.X * v.Y - u.Y * v.X;
         }
 
         /// <summary>
         /// Obtains the counter clockwise perpendicular vector.
         /// </summary>
         /// <param name="u">Vector2.</param>
-        /// <returns>Vector2.</returns>
+        /// <returns>The perpendicular vector.</returns>
         public static Vector2 Perpendicular(Vector2 u)
         {
-            return new Vector2(-u.Y, u.X) {isNormalized = u.IsNormalized};
+            return new Vector2(-u.Y, u.X) { isNormalized = u.IsNormalized };
         }
 
         /// <summary>
@@ -248,7 +258,7 @@ namespace netDxf
         /// </summary>
         /// <param name="u">Vector2.</param>
         /// <param name="angle">Rotation angles in radians.</param>
-        /// <returns></returns>
+        /// <returns>The rotated vector.</returns>
         public static Vector2 Rotate(Vector2 u, double angle)
         {
             double sin = Math.Sin(angle);
@@ -266,7 +276,7 @@ namespace netDxf
         public static Vector2 Polar(Vector2 u, double distance, double angle)
         {
             Vector2 dir = new Vector2(Math.Cos(angle), Math.Sin(angle));
-            return u + dir*distance;
+            return u + dir * distance;
         }
 
         /// <summary>
@@ -303,6 +313,7 @@ namespace netDxf
             {
                 return MathHelper.TwoPI + angle;
             }
+
             return angle;
         }
 
@@ -423,7 +434,7 @@ namespace netDxf
             double mod = u.Modulus();
             if (MathHelper.IsZero(mod))
             {
-                return NaN;
+                return Zero;
             }
 
             double modInv = 1 / mod;
@@ -507,7 +518,7 @@ namespace netDxf
         /// <returns>The negative vector of u.</returns>
         public static Vector2 operator -(Vector2 u)
         {
-            return new Vector2(-u.X, -u.Y) { isNormalized = u.IsNormalized };
+            return new Vector2(-u.X, -u.Y) {isNormalized = u.IsNormalized};
         }
 
         /// <summary>
@@ -528,7 +539,7 @@ namespace netDxf
         /// <returns>The multiplication of u times a.</returns>
         public static Vector2 operator *(Vector2 u, double a)
         {
-            return new Vector2(u.X*a, u.Y*a);
+            return new Vector2(u.X * a, u.Y * a);
         }
 
         /// <summary>
@@ -539,7 +550,7 @@ namespace netDxf
         /// <returns>The multiplication of u times a.</returns>
         public static Vector2 Multiply(Vector2 u, double a)
         {
-            return new Vector2(u.X*a, u.Y*a);
+            return new Vector2(u.X * a, u.Y * a);
         }
 
         /// <summary>
@@ -550,7 +561,7 @@ namespace netDxf
         /// <returns>The multiplication of u times a.</returns>
         public static Vector2 operator *(double a, Vector2 u)
         {
-            return new Vector2(u.X*a, u.Y*a);
+            return new Vector2(u.X * a, u.Y * a);
         }
 
         /// <summary>
@@ -561,7 +572,7 @@ namespace netDxf
         /// <returns>The multiplication of u times a.</returns>
         public static Vector2 Multiply(double a, Vector2 u)
         {
-            return new Vector2(u.X*a, u.Y*a);
+            return new Vector2(u.X * a, u.Y * a);
         }
 
         /// <summary>
@@ -594,8 +605,8 @@ namespace netDxf
         /// <returns>The division of u times a.</returns>
         public static Vector2 operator /(Vector2 u, double a)
         {
-            double invScalar = 1/a;
-            return new Vector2(u.X*invScalar, u.Y*invScalar);
+            double invScalar = 1 / a;
+            return new Vector2(u.X * invScalar, u.Y * invScalar);
         }
 
         /// <summary>
@@ -606,8 +617,8 @@ namespace netDxf
         /// <returns>The division of u times a.</returns>
         public static Vector2 Divide(Vector2 u, double a)
         {
-            double invScalar = 1/a;
-            return new Vector2(u.X*invScalar, u.Y*invScalar);
+            double invScalar = 1 / a;
+            return new Vector2(u.X * invScalar, u.Y * invScalar);
         }
 
         /// <summary>
@@ -649,14 +660,14 @@ namespace netDxf
             double mod = this.Modulus();
             if (MathHelper.IsZero(mod))
             {
-                this = NaN;
+                this = Zero;
+                return;
             }
-            else
-            {
-                double modInv = 1/mod;
-                this.x *= modInv;
-                this.y *= modInv;
-            }
+
+            double modInv = 1 / mod;
+            this.x *= modInv;
+            this.y *= modInv;
+
             this.isNormalized = true;
         }
 
@@ -737,6 +748,7 @@ namespace netDxf
             {
                 return this.Equals(vector);
             }
+
             return false;
         }
 

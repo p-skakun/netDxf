@@ -1,7 +1,7 @@
 #region netDxf library licensed under the MIT License
 // 
 //                       netDxf library
-// Copyright (c) 2019-2021 Daniel Carvajal (haplokuon@gmail.com)
+// Copyright (c) Daniel Carvajal (haplokuon@gmail.com)
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -219,8 +219,7 @@ namespace netDxf.Entities
 
         private AciColor Color2FromTint(double value)
         {
-            double h, s, l;
-            AciColor.ToHsl(this.color1, out h, out s, out l);
+            AciColor.ToHsl(this.color1, out double h, out double s, out double _);
             return AciColor.FromHsl(h, s, value);
         }
 

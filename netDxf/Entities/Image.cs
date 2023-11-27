@@ -1,7 +1,7 @@
 #region netDxf library licensed under the MIT License
 // 
 //                       netDxf library
-// Copyright (c) 2019-2021 Daniel Carvajal (haplokuon@gmail.com)
+// Copyright (c) Daniel Carvajal (haplokuon@gmail.com)
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -276,7 +276,7 @@ namespace netDxf.Entities
             get { return this.brightness; }
             set
             {
-                if (value < 0 && value > 100)
+                if (value < 0 || value > 100)
                 {
                     throw new ArgumentOutOfRangeException(nameof(value), value, "Accepted brightness values range from 0 to 100.");
                 }
@@ -292,7 +292,7 @@ namespace netDxf.Entities
             get { return this.contrast; }
             set
             {
-                if (value < 0 && value > 100)
+                if (value < 0 || value > 100)
                 {
                     throw new ArgumentOutOfRangeException(nameof(value), value, "Accepted contrast values range from 0 to 100.");
                 }
@@ -308,7 +308,7 @@ namespace netDxf.Entities
             get { return this.fade; }
             set
             {
-                if (value < 0 && value > 100)
+                if (value < 0 || value > 100)
                 {
                     throw new ArgumentOutOfRangeException(nameof(value), value, "Accepted fade values range from 0 to 100.");
                 }

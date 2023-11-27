@@ -1,7 +1,7 @@
 #region netDxf library licensed under the MIT License
 // 
 //                       netDxf library
-// Copyright (c) 2019-2021 Daniel Carvajal (haplokuon@gmail.com)
+// Copyright (c) Daniel Carvajal (haplokuon@gmail.com)
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -46,9 +46,6 @@ namespace netDxf.Objects
         private ImageResolutionUnits resolutionUnits;
         private double horizontalResolution;
         private double verticalResolution;
-
-        // this will store the references to the images that makes use of this image definition (key: image handle, value: reactor)
-        private readonly Dictionary<string, ImageDefinitionReactor> reactors;
 
         #endregion
 
@@ -147,10 +144,9 @@ namespace netDxf.Objects
 
             this.resolutionUnits = units;
 
-            this.reactors = new Dictionary<string, ImageDefinitionReactor>();
         }
 
-#if NET45
+#if NET4X
 
         ///  <summary>
         ///  Initializes a new instance of the <c>ImageDefinition</c> class. Only available for Net Framework 4.5 builds.
@@ -231,7 +227,6 @@ namespace netDxf.Objects
                 throw new ArgumentException("Image file not supported.", file);
             }
 
-            this.reactors = new Dictionary<string, ImageDefinitionReactor>();
         }
 
 #endif
@@ -277,8 +272,8 @@ namespace netDxf.Objects
                 {
                     throw new ArgumentOutOfRangeException(nameof(value), value, "The ImageDefinition width must be greater than zero.");
                 }
-                this.width = value;
 
+                this.width = value;
             }
         }
 
@@ -294,6 +289,7 @@ namespace netDxf.Objects
                 {
                     throw new ArgumentOutOfRangeException(nameof(value), value, "The ImageDefinition height must be greater than zero.");
                 }
+
                 this.height = value;
             }
         }
@@ -310,6 +306,7 @@ namespace netDxf.Objects
                 {
                     throw new ArgumentOutOfRangeException(nameof(value), value, "The ImageDefinition horizontal resolution must be greater than zero.");
                 }
+
                 this.horizontalResolution = value;
             }
         }
@@ -326,6 +323,7 @@ namespace netDxf.Objects
                 {
                     throw new ArgumentOutOfRangeException(nameof(value), value, "The ImageDefinition vertical resolution must be greater than zero.");
                 }
+
                 this.verticalResolution = value;
             }
         }
@@ -370,16 +368,42 @@ namespace netDxf.Objects
 
         #endregion
 
-        #region internal properties
+        #region overrides
 
-        internal Dictionary<string, ImageDefinitionReactor> Reactors
+        /// <summary>
+        /// Checks if this instance has been referenced by other DxfObjects. 
+        /// </summary>
+        /// <returns>
+        /// Returns true if this instance has been referenced by other DxfObjects, false otherwise.
+        /// It will always return false if this instance does not belong to a document.
+        /// </returns>
+        /// <remarks>
+        /// This method returns the same value as the HasReferences method that can be found in the TableObjects class.
+        /// </remarks>
+        public override bool HasReferences()
         {
-            get { return this.reactors; }
+            return this.Owner != null && this.Owner.HasReferences(this.Name);
         }
 
-        #endregion
+        /// <summary>
+        /// Gets the list of DxfObjects referenced by this instance.
+        /// </summary>
+        /// <returns>
+        /// A list of DxfObjectReference that contains the DxfObject referenced by this instance and the number of times it does.
+        /// It will return null if this instance does not belong to a document.
+        /// </returns>
+        /// <remarks>
+        /// This method returns the same list as the GetReferences method that can be found in the TableObjects class.
+        /// </remarks>
+        public override List<DxfObjectReference> GetReferences()
+        {
+            if (this.Owner == null)
+            {
+                return null;
+            }
 
-        #region overrides
+            return this.Owner.GetReferences(this.Name);
+        }
 
         /// <summary>
         /// Creates a new ImageDefinition that is a copy of the current instance.

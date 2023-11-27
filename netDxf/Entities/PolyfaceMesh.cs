@@ -1,7 +1,7 @@
 #region netDxf library licensed under the MIT License
 // 
 //                       netDxf library
-// Copyright (c) 2019-2021 Daniel Carvajal (haplokuon@gmail.com)
+// Copyright (c) Daniel Carvajal (haplokuon@gmail.com)
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -58,8 +58,7 @@ namespace netDxf.Entities
 
         private readonly PolyfaceMeshFace[] faces;
         private readonly Vector3[] vertexes;
-        private readonly PolylineTypeFlags flags;
-        private readonly EndSequence endSequence;
+        private PolylineTypeFlags flags;
 
         #endregion
 
@@ -86,7 +85,7 @@ namespace netDxf.Entities
 
             if (faces == null)
             {
-                throw new ArgumentNullException(nameof(vertexes));
+                throw new ArgumentNullException(nameof(faces));
             }
 
             int numFaces = faces.Count();
@@ -103,7 +102,6 @@ namespace netDxf.Entities
             {
                 face.LayerChanged += this.PolyfaceMeshFace_LayerChanged;
             }
-            this.endSequence = new EndSequence(this);
         }
 
         /// <summary>
@@ -127,7 +125,7 @@ namespace netDxf.Entities
 
             if (faces == null)
             {
-                throw new ArgumentNullException(nameof(vertexes));
+                throw new ArgumentNullException(nameof(faces));
             }
 
             this.faces = faces.ToArray();
@@ -140,7 +138,6 @@ namespace netDxf.Entities
             {
                 face.LayerChanged += this.PolyfaceMeshFace_LayerChanged;
             }
-            this.endSequence = new EndSequence(this);
         }
 
         #endregion
@@ -168,34 +165,12 @@ namespace netDxf.Entities
         #region internal properties
 
         /// <summary>
-        /// Gets the polyface mesh flag type.
+        /// Gets the polyface mesh flags.
         /// </summary>
         internal PolylineTypeFlags Flags
         {
             get { return this.flags; }
-        }
-
-        /// <summary>
-        /// Gets the end vertex sequence.
-        /// </summary>
-        internal EndSequence EndSequence
-        {
-            get { return this.endSequence; }
-        }
-
-        #endregion
-
-        #region overrides
-
-        /// <summary>
-        /// Assigns a handle to the object based in a integer counter.
-        /// </summary>
-        /// <param name="entityNumber">Number to assign.</param>
-        /// <returns>Next available entity number.</returns>
-        internal override long AssignHandle(long entityNumber)
-        {
-            entityNumber = this.endSequence.AssignHandle(entityNumber);
-            return base.AssignHandle(entityNumber);
+            set { this.flags = value; }
         }
 
         #endregion
@@ -204,9 +179,9 @@ namespace netDxf.Entities
 
         /// <summary>
         /// Decompose the actual polyface mesh faces in <see cref="Point">points</see> (one vertex polyface mesh face),
-        /// <see cref="Line">lines</see> (two vertexes polyface mesh face) and <see cref="Face3d">3d faces</see> (three or four vertexes polyface mesh face).
+        /// <see cref="Line">lines</see> (two vertexes polyface mesh face) and <see cref="Face3D">3d faces</see> (three or four vertexes polyface mesh face).
         /// </summary>
-        /// <returns>A list of <see cref="Face3d">3d faces</see> that made up the polyface mesh.</returns>
+        /// <returns>A list of <see cref="Face3D">3d faces</see> that made up the polyface mesh.</returns>
         public List<EntityObject> Explode()
         {
             List<EntityObject> entities = new List<EntityObject>();
@@ -250,7 +225,7 @@ namespace netDxf.Entities
                     continue;
                 }
 
-                Face3dEdgeFlags edgeVisibility = Face3dEdgeFlags.None;
+                Face3DEdgeFlags edgeVisibility = Face3DEdgeFlags.None;
 
                 short indexV1 = face.VertexIndexes[0];
                 short indexV2 = face.VertexIndexes[1];
@@ -260,22 +235,22 @@ namespace netDxf.Entities
 
                 if (indexV1 < 0)
                 {
-                    edgeVisibility |= Face3dEdgeFlags.First;
+                    edgeVisibility |= Face3DEdgeFlags.First;
                 }
 
                 if (indexV2 < 0)
                 {
-                    edgeVisibility |= Face3dEdgeFlags.Second;
+                    edgeVisibility |= Face3DEdgeFlags.Second;
                 }
 
                 if (indexV3 < 0)
                 {
-                    edgeVisibility |= Face3dEdgeFlags.Third;
+                    edgeVisibility |= Face3DEdgeFlags.Third;
                 }
 
                 if (indexV4 < 0)
                 {
-                    edgeVisibility |= Face3dEdgeFlags.Fourth;
+                    edgeVisibility |= Face3DEdgeFlags.Fourth;
                 }
 
                 Vector3 v1 = this.Vertexes[Math.Abs(indexV1) - 1];
@@ -283,7 +258,7 @@ namespace netDxf.Entities
                 Vector3 v3 = this.Vertexes[Math.Abs(indexV3) - 1];
                 Vector3 v4 = this.Vertexes[Math.Abs(indexV4) - 1];
 
-                Face3d face3d = new Face3d
+                Face3D face3D = new Face3D
                 {
                     Layer = (Layer) faceLayer.Clone(),
                     Linetype = (Linetype) this.Linetype.Clone(),
@@ -299,7 +274,7 @@ namespace netDxf.Entities
                     EdgeFlags = edgeVisibility,
                 };
 
-                entities.Add(face3d);
+                entities.Add(face3D);
             }
 
             return entities;
@@ -348,6 +323,8 @@ namespace netDxf.Entities
                 Normal = this.Normal,
                 IsVisible = this.IsVisible,
                 //PolyfaceMesh properties
+                Flags = this.flags
+
             };
 
             foreach (XData data in this.XData.Values)

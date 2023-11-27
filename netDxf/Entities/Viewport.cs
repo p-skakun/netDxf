@@ -1,7 +1,7 @@
 #region netDxf library licensed under the MIT License
 // 
 //                       netDxf library
-// Copyright (c) 2019-2021 Daniel Carvajal (haplokuon@gmail.com)
+// Copyright (c) Daniel Carvajal (haplokuon@gmail.com)
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -426,14 +426,14 @@ namespace netDxf.Entities
                             Ellipse ellipse = (Ellipse) value;
                             abbr = new BoundingRectangle(new Vector2(ellipse.Center.X, ellipse.Center.Y), ellipse.MajorAxis, ellipse.MinorAxis, ellipse.Rotation);
                             break;
-                        case EntityType.LwPolyline:
-                            LwPolyline lwPol = (LwPolyline) value;
-                            abbr = new BoundingRectangle(lwPol.PolygonalVertexes(6, MathHelper.Epsilon, MathHelper.Epsilon));
+                        case EntityType.Polyline2D:
+                            Polyline2D poly2D = (Polyline2D) value;
+                            abbr = new BoundingRectangle(poly2D.PolygonalVertexes(6, MathHelper.Epsilon, MathHelper.Epsilon));
                             break;
-                        case EntityType.Polyline:
-                            Polyline pol = (Polyline) value;
+                        case EntityType.Polyline3D:
+                            Polyline3D poly3D = (Polyline3D) value;
                             List<Vector2> pPoints = new List<Vector2>();
-                            foreach (Vector3 point in pol.Vertexes)
+                            foreach (Vector3 point in poly3D.Vertexes)
                             {
                                 pPoints.Add(new Vector2(point.X, point.Y));
                             }
@@ -442,9 +442,9 @@ namespace netDxf.Entities
                         case EntityType.Spline:
                             Spline spline = (Spline) value;
                             List<Vector2> sPoints = new List<Vector2>();
-                            foreach (SplineVertex point in spline.ControlPoints)
+                            foreach (Vector3 point in spline.ControlPoints)
                             {
-                                sPoints.Add(new Vector2(point.Position.X, point.Position.Y));
+                                sPoints.Add(new Vector2(point.X, point.Y));
                             }
                             abbr = new BoundingRectangle(sPoints);
                             break;
@@ -512,15 +512,15 @@ namespace netDxf.Entities
                     return;
                 }
 
-                // when a view port is transformed a LwPolyline will be generated
-                List<LwPolylineVertex> vertexes = new List<LwPolylineVertex>
+                // when a view port is transformed a Polyline2D will be generated
+                List<Polyline2DVertex> vertexes = new List<Polyline2DVertex>
                 {
-                    new LwPolylineVertex(this.center.X - this.width * 0.5, this.center.Y - this.height * 0.5),
-                    new LwPolylineVertex(this.center.X + this.width * 0.5, this.center.Y - this.height * 0.5),
-                    new LwPolylineVertex(this.center.X + this.width * 0.5, this.center.Y + this.height * 0.5),
-                    new LwPolylineVertex(this.center.X - this.width * 0.5, this.center.Y + this.height * 0.5)
+                    new Polyline2DVertex(this.center.X - this.width * 0.5, this.center.Y - this.height * 0.5),
+                    new Polyline2DVertex(this.center.X + this.width * 0.5, this.center.Y - this.height * 0.5),
+                    new Polyline2DVertex(this.center.X + this.width * 0.5, this.center.Y + this.height * 0.5),
+                    new Polyline2DVertex(this.center.X - this.width * 0.5, this.center.Y + this.height * 0.5)
                 };
-                clippingEntity = new LwPolyline(vertexes, true);
+                clippingEntity = new Polyline2D(vertexes, true);
             }
 
             clippingEntity.TransformBy(transformation, translation);
